@@ -34,13 +34,18 @@ export default function App() {
     setInput("");
     setOutput("");
     setError("");
+    setCopied(false);
   }
 
   async function copy() {
     if (!output) return;
-    await navigator.clipboard.writeText(output);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    try {
+      await navigator.clipboard.writeText(output);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setError("Copy failed — please copy the output manually.");
+    }
   }
 
   return (
@@ -72,8 +77,9 @@ export default function App() {
 
       <div className="editors">
         <div className="editor-pane">
-          <label>Input</label>
+          <label htmlFor="json-input">Input</label>
           <textarea
+            id="json-input"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder='{"key": "value"}'
@@ -82,12 +88,17 @@ export default function App() {
         </div>
         <div className="editor-pane">
           <div className="pane-header">
-            <label>Output</label>
+            <label htmlFor="json-output">Output</label>
             <button onClick={copy} className="copy-btn">
               {copied ? "Copied!" : "Copy"}
             </button>
           </div>
-          <textarea value={output} readOnly spellCheck={false} />
+          <textarea
+            id="json-output"
+            value={output}
+            readOnly
+            spellCheck={false}
+          />
         </div>
       </div>
     </div>

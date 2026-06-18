@@ -15,7 +15,7 @@
 ## Before every git push
 
 1. npm run lint
-2. npm run typecheck
+2. npm run type-check
 3. npm run build
    Only push if all three pass — no exceptions.
 
