@@ -38,3 +38,16 @@
 
 - Team: Engineering Team (JSO)
 - Current: JSO-5 scaffold → JSO-6 Web Worker parser next
+
+## Testing workflow
+
+After implementing any new feature or fixing a bug, run the
+test-writer subagent BEFORE opening a PR — not after merge.
+
+Example: "Use the test-writer subagent to write tests for [feature]."
+
+This is mandatory for any change touching:
+
+- Parsing/formatting logic (beautify, minify, validate, repair)
+- User input handling (paste, upload, URL load)
+- Any function with edge cases (empty input, malformed data, large files)
