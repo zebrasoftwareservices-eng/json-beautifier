@@ -247,7 +247,7 @@ button.primary-btn {
 
 .tree-search {
   flex: 1;
-  background: #0d0f1a;
+  background: #1a1e2e;
   border: 1px solid var(--border);
   border-radius: 4px;
   color: var(--text);
@@ -345,7 +345,7 @@ button.primary-btn {
 }
 
 .tree-key {
-  color: #93c5fd;
+  color: #6366f1;
 }
 .tree-colon {
   color: var(--text);
@@ -353,13 +353,13 @@ button.primary-btn {
 }
 
 .tree-value--string {
-  color: #86efac;
+  color: #0d9488;
 }
 .tree-value--number {
-  color: #fdba74;
+  color: #6366f1;
 }
 .tree-value--boolean {
-  color: #c4b5fd;
+  color: #6366f1;
 }
 .tree-value--null {
   color: var(--text);
@@ -396,8 +396,8 @@ button.primary-btn {
 }
 
 mark.tree-match {
-  background: rgba(253, 186, 116, 0.35);
-  color: #fdba74;
+  background: rgba(99, 102, 241, 0.35);
+  color: #6366f1;
   border-radius: 2px;
 }
 

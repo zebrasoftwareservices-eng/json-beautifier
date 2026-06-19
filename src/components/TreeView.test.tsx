@@ -5,9 +5,12 @@ import { TreeView } from "./TreeView";
 
 // ── Clipboard mock ────────────────────────────────────────────────────────────
 
+let writeTextMock: ReturnType<typeof vi.fn>;
+
 beforeEach(() => {
+  writeTextMock = vi.fn().mockResolvedValue(undefined);
   Object.defineProperty(navigator, "clipboard", {
-    value: { writeText: vi.fn().mockResolvedValue(undefined) },
+    value: { writeText: writeTextMock },
     writable: true,
     configurable: true,
   });
@@ -102,15 +105,14 @@ describe("array JSON", () => {
 // ── 5. Toggle: expand a collapsed node shows its children ────────────────────
 
 describe("toggle expand", () => {
-  it("shows children after expanding a collapsed object node", () => {
+  it("shows children after expanding a collapsed object node", async () => {
+    const user = userEvent.setup();
     render(<TreeView json={NESTED_OBJECT} />);
 
     // "person" key is a child of root (root expanded by default).
     // The "person" node itself is collapsed → its children (name, city) hidden.
-    // Find the Expand button for the "person" row.
     const expandBtns = screen.getAllByLabelText("Expand");
-    // Click the first Expand button (person node)
-    fireEvent.click(expandBtns[0]);
+    await user.click(expandBtns[0]);
 
     expect(screen.getByText(/city/)).toBeInTheDocument();
   });
@@ -119,14 +121,13 @@ describe("toggle expand", () => {
 // ── 6. Toggle: collapse hides children ───────────────────────────────────────
 
 describe("toggle collapse", () => {
-  it("hides children after collapsing root", () => {
+  it("hides children after collapsing root", async () => {
+    const user = userEvent.setup();
     render(<TreeView json={SIMPLE_OBJECT} />);
 
-    // Root is expanded; Collapse button should be on the root row
     const collapseBtn = screen.getByLabelText("Collapse");
-    fireEvent.click(collapseBtn);
+    await user.click(collapseBtn);
 
-    // After collapsing root, first-level keys should disappear
     expect(screen.queryByText(/name/)).not.toBeInTheDocument();
     expect(screen.queryByText(/age/)).not.toBeInTheDocument();
   });
@@ -135,13 +136,13 @@ describe("toggle collapse", () => {
 // ── 7. Expand all ─────────────────────────────────────────────────────────────
 
 describe("expand all", () => {
-  it("makes all nested nodes visible after clicking Expand all", () => {
+  it("makes all nested nodes visible after clicking Expand all", async () => {
+    const user = userEvent.setup();
     render(<TreeView json={NESTED_OBJECT} />);
 
-    // "city" is inside the nested "person" object — not visible yet
     expect(screen.queryByText(/city/)).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByTitle("Expand all"));
+    await user.click(screen.getByTitle("Expand all"));
 
     expect(screen.getByText(/city/)).toBeInTheDocument();
   });
@@ -150,28 +151,24 @@ describe("expand all", () => {
 // ── 8. Collapse all ───────────────────────────────────────────────────────────
 
 describe("collapse all", () => {
-  it("hides nested grandchildren after clicking Collapse all", () => {
-    // Start with NESTED_OBJECT: root → { person: { name, city }, score }
-    // First expand all so grandchildren are visible
+  it("hides nested grandchildren after clicking Collapse all", async () => {
+    const user = userEvent.setup();
     render(<TreeView json={NESTED_OBJECT} />);
-    fireEvent.click(screen.getByTitle("Expand all"));
+    await user.click(screen.getByTitle("Expand all"));
 
-    // "city" is a grandchild — should be visible now
     expect(screen.getByText(/city/)).toBeInTheDocument();
 
-    // Collapse all: only root stays expanded → direct children of root visible,
-    // but grandchildren (inside "person") are hidden
-    fireEvent.click(screen.getByTitle("Collapse all"));
+    await user.click(screen.getByTitle("Collapse all"));
 
     expect(screen.queryByText(/city/)).not.toBeInTheDocument();
   });
 
-  it("keeps root's direct children visible after Collapse all", () => {
+  it("keeps root's direct children visible after Collapse all", async () => {
+    const user = userEvent.setup();
     render(<TreeView json={NESTED_OBJECT} />);
-    fireEvent.click(screen.getByTitle("Expand all"));
-    fireEvent.click(screen.getByTitle("Collapse all"));
+    await user.click(screen.getByTitle("Expand all"));
+    await user.click(screen.getByTitle("Collapse all"));
 
-    // Root is still expanded → "person" and "score" should be present
     expect(screen.getByText(/person/)).toBeInTheDocument();
     expect(screen.getByText(/score/)).toBeInTheDocument();
   });
@@ -188,8 +185,6 @@ describe("search — key match", () => {
     await user.type(searchInput, "age");
 
     const rows = document.querySelectorAll(".tree-row");
-    // Only the "age" row should be visible (root object is not a primitive so
-    // it gets filtered out; "name" and "active" don't match "age")
     expect(rows.length).toBe(1);
     expect(screen.getByText(/age/)).toBeInTheDocument();
   });
@@ -218,7 +213,7 @@ describe("search — match count", () => {
     render(<TreeView json={SIMPLE_OBJECT} />);
 
     const searchInput = screen.getByRole("searchbox", { name: /search tree/i });
-    await user.type(searchInput, "a"); // matches "name", "age", "active", "Alice", "30" — "a" in "age","active","name","Alice"
+    await user.type(searchInput, "a");
 
     expect(screen.getByText(/\d+ match(es)?/)).toBeInTheDocument();
   });
@@ -235,7 +230,6 @@ describe("search — match count", () => {
 
   it("shows plural 'matches' when more than one row matches", async () => {
     const user = userEvent.setup();
-    // Use a JSON where multiple values share a common substring
     const json = JSON.stringify({ foo: "bar", baz: "bar" });
     render(<TreeView json={json} />);
 
@@ -255,16 +249,14 @@ describe("breadcrumb", () => {
     expect(breadcrumb).toHaveTextContent("$");
   });
 
-  it("updates to the hovered row's JSONPath", () => {
+  it("updates to the hovered row's JSONPath", async () => {
+    const user = userEvent.setup();
     render(<TreeView json={SIMPLE_OBJECT} />);
 
-    // Hover over the first child row (one of name / age / active)
     const rows = document.querySelectorAll(".tree-row");
-    // rows[1] is the first child (e.g. $.name)
-    fireEvent.mouseEnter(rows[1]);
+    await user.hover(rows[1] as HTMLElement);
 
     const breadcrumb = document.querySelector(".tree-breadcrumb");
-    // Path should be something like "$.name" — not the default "$"
     expect(breadcrumb?.textContent).not.toBe("$");
     expect(breadcrumb?.textContent).toMatch(/^\$\./);
   });
@@ -273,35 +265,32 @@ describe("breadcrumb", () => {
 // ── 13. Clipboard: Copy value ─────────────────────────────────────────────────
 
 describe("clipboard — copy value", () => {
-  it("calls clipboard.writeText with the primitive value on Copy value click", async () => {
+  it("calls clipboard.writeText with the primitive value on Copy value click", () => {
+    // fireEvent is used here instead of userEvent: userEvent.setup() replaces
+    // navigator.clipboard internally even with writeToClipboard:false, which
+    // breaks our writeTextMock. These tests verify handler wiring, not UX fidelity.
     render(<TreeView json={SIMPLE_OBJECT} />);
 
-    // Hover over the "name" row to reveal action buttons
     const rows = document.querySelectorAll(".tree-row");
     fireEvent.mouseEnter(rows[1]);
 
-    const copyValueBtn = screen.getByTitle("Copy value");
-    fireEvent.click(copyValueBtn);
+    fireEvent.click(screen.getByTitle("Copy value"));
 
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith("Alice");
+    expect(writeTextMock).toHaveBeenCalledWith("Alice");
   });
 });
 
 // ── 14. Clipboard: Copy path ──────────────────────────────────────────────────
 
 describe("clipboard — copy path", () => {
-  it("calls clipboard.writeText with the JSONPath on Copy path click", async () => {
+  it("calls clipboard.writeText with the JSONPath on Copy path click", () => {
     render(<TreeView json={SIMPLE_OBJECT} />);
 
     const rows = document.querySelectorAll(".tree-row");
     fireEvent.mouseEnter(rows[1]);
 
-    const copyPathBtn = screen.getByTitle("Copy JSONPath");
-    fireEvent.click(copyPathBtn);
+    fireEvent.click(screen.getByTitle("Copy JSONPath"));
 
-    // Should be something like "$.name"
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-      expect.stringMatching(/^\$\./),
-    );
+    expect(writeTextMock).toHaveBeenCalledWith(expect.stringMatching(/^\$\./));
   });
 });
