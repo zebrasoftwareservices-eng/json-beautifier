@@ -226,6 +226,181 @@ button.primary-btn {
   background: var(--bg);
 }
 
+/* ── Tree View ── */
+.tree-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  font-size: 13px;
+  font-family: var(--mono);
+}
+
+.tree-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.tree-search {
+  flex: 1;
+  background: #0d0f1a;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 3px 8px;
+  outline: none;
+}
+.tree-search:focus {
+  border-color: var(--accent);
+}
+
+.tree-ctrl-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.tree-ctrl-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tree-breadcrumb {
+  padding: 3px 10px;
+  font-size: 11px;
+  color: var(--accent);
+  opacity: 0.85;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tree-count {
+  padding: 2px 10px;
+  font-size: 11px;
+  color: var(--text);
+  opacity: 0.6;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.tree-list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.tree-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text);
+  opacity: 0.4;
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.tree-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  position: relative;
+  white-space: nowrap;
+  user-select: none;
+  cursor: default;
+}
+.tree-row--hovered {
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.tree-toggle {
+  width: 14px;
+  text-align: center;
+  color: var(--text);
+  opacity: 0.5;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 10px;
+}
+.tree-toggle--leaf {
+  cursor: default;
+}
+.tree-toggle:not(.tree-toggle--leaf):hover {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.tree-key {
+  color: #93c5fd;
+}
+.tree-colon {
+  color: var(--text);
+  opacity: 0.5;
+}
+
+.tree-value--string {
+  color: #86efac;
+}
+.tree-value--number {
+  color: #fdba74;
+}
+.tree-value--boolean {
+  color: #c4b5fd;
+}
+.tree-value--null {
+  color: var(--text);
+  opacity: 0.45;
+}
+.tree-value--object,
+.tree-value--array {
+  color: var(--text);
+  opacity: 0.6;
+}
+
+.tree-summary {
+  font-style: italic;
+}
+
+.tree-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.tree-action-btn {
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-family: var(--mono);
+}
+.tree-action-btn:hover {
+  background: rgba(99, 102, 241, 0.3);
+}
+
+mark.tree-match {
+  background: rgba(253, 186, 116, 0.35);
+  color: #fdba74;
+  border-radius: 2px;
+}
+
 /* ── Responsive: stack on mobile ── */
 @media (max-width: 700px) {
   .split-pane {

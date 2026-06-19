@@ -1,4 +1,5 @@
 import { CodeEditor } from "./CodeEditor";
+import { TreeView } from "./TreeView";
 
 export type TabId = "tree" | "code" | "table" | "diff" | "schema";
 
@@ -70,7 +71,9 @@ export function RightPane({ output, activeTab, onTabChange }: RightPaneProps) {
             hidden={activeTab !== tab.id}
             style={{ height: "100%" }}
           >
-            {tab.id === "code" ? (
+            {tab.id === "tree" ? (
+              <TreeView json={output} />
+            ) : tab.id === "code" ? (
               <CodeEditor
                 value={output}
                 readOnly
