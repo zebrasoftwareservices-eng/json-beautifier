@@ -104,9 +104,9 @@ button.primary-btn {
 
 /* ── Error banner ── */
 .error-banner {
-  background: #2d1515;
+  background: rgba(239, 68, 68, 0.1);
   color: #ef4444;
-  border-bottom: 1px solid #7f1d1d;
+  border-bottom: 1px solid #2d3250;
   padding: 6px 14px;
   font-size: 12px;
   font-family: var(--mono);

@@ -12,6 +12,16 @@ export function SplitPane({ left, right }: SplitPaneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [leftPct, setLeftPct] = useState(50);
 
+  const onKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      setLeftPct((prev) => Math.max(MIN_PCT, prev - 5));
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      setLeftPct((prev) => Math.min(MAX_PCT, prev + 5));
+    }
+  }, []);
+
   const onMouseDown = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
@@ -45,6 +55,7 @@ export function SplitPane({ left, right }: SplitPaneProps) {
       <div
         className="split-handle"
         onMouseDown={onMouseDown}
+        onKeyDown={onKeyDown}
         role="separator"
         aria-orientation="vertical"
         tabIndex={0}

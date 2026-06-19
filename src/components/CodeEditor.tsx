@@ -122,10 +122,10 @@ export function CodeEditor({
     const doc = view.state.doc;
     let from = 0;
     if (error.line != null) {
-      const lineNum = Math.min(error.line, doc.lines);
+      const lineNum = Math.max(1, Math.min(error.line, doc.lines));
       const lineObj = doc.line(lineNum);
-      const col = error.column != null ? error.column - 1 : 0;
-      from = Math.min(lineObj.from + col, lineObj.to);
+      const col = Math.max(0, (error.column ?? 1) - 1);
+      from = Math.max(lineObj.from, Math.min(lineObj.from + col, lineObj.to));
     }
 
     const diagnostics: Diagnostic[] = [

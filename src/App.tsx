@@ -21,42 +21,56 @@ export default function App() {
   async function handleFormat() {
     if (!input.trim()) return;
     setProcessing(true);
-    const result = await process("beautify", input, indent);
-    setProcessing(false);
-    if (result.ok) {
-      setOutput(result.result);
-      setParseTimeMs(result.parseTimeMs);
-      setError(null);
-      setActiveTab("code");
-    } else {
-      setError({
-        message: result.message,
-        line: result.line,
-        column: result.column,
-      });
+    try {
+      const result = await process("beautify", input, indent);
+      if (result.ok) {
+        setOutput(result.result);
+        setParseTimeMs(result.parseTimeMs);
+        setError(null);
+        setActiveTab("code");
+      } else {
+        setError({
+          message: result.message,
+          line: result.line,
+          column: result.column,
+        });
+        setOutput("");
+        setParseTimeMs(null);
+      }
+    } catch {
+      setError({ message: "Formatting failed — please try again." });
       setOutput("");
       setParseTimeMs(null);
+    } finally {
+      setProcessing(false);
     }
   }
 
   async function handleMinify() {
     if (!input.trim()) return;
     setProcessing(true);
-    const result = await process("minify", input);
-    setProcessing(false);
-    if (result.ok) {
-      setOutput(result.result);
-      setParseTimeMs(result.parseTimeMs);
-      setError(null);
-      setActiveTab("code");
-    } else {
-      setError({
-        message: result.message,
-        line: result.line,
-        column: result.column,
-      });
+    try {
+      const result = await process("minify", input);
+      if (result.ok) {
+        setOutput(result.result);
+        setParseTimeMs(result.parseTimeMs);
+        setError(null);
+        setActiveTab("code");
+      } else {
+        setError({
+          message: result.message,
+          line: result.line,
+          column: result.column,
+        });
+        setOutput("");
+        setParseTimeMs(null);
+      }
+    } catch {
+      setError({ message: "Minify failed — please try again." });
       setOutput("");
       setParseTimeMs(null);
+    } finally {
+      setProcessing(false);
     }
   }
 
