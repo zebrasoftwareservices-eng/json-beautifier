@@ -1,7 +1,17 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import App from "./App";
+import { processJson } from "./worker/jsonLogic";
+
+// Mock useJsonWorker to use the pure processJson function directly,
+// avoiding Worker instantiation which is not available in jsdom.
+vi.mock("./worker/useJsonWorker", () => ({
+  useJsonWorker: () => ({
+    process: (type: "beautify" | "minify", input: string, indent = 2) =>
+      Promise.resolve(processJson(type, input, indent)),
+  }),
+}));
 
 function setup() {
   const user = userEvent.setup();
