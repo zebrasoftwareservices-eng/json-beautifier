@@ -1,66 +1,95 @@
+/* ── Reset ── */
 * {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
+/* ── App shell ── */
 .app {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 32px 20px;
-  min-height: 100svh;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-}
-
-header h1 {
-  margin: 0 0 4px;
-  font-size: 2rem;
+  height: 100dvh;
+  background: var(--bg);
   color: var(--text-h);
+  overflow: hidden;
 }
 
-header p {
-  color: var(--text);
+.app-header {
+  padding: 10px 16px 8px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
-.controls {
+.app-header h1 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-h);
+  letter-spacing: -0.01em;
+}
+
+/* ── Action bar ── */
+.action-bar {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  flex-shrink: 0;
   flex-wrap: wrap;
 }
 
-.controls label {
+.action-group {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  gap: 4px;
+}
+
+.action-group + .action-group {
+  padding-left: 8px;
+  border-left: 1px solid var(--border);
+}
+
+.indent-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
   color: var(--text);
 }
 
-.controls select {
-  padding: 6px 10px;
-  border-radius: 6px;
+.indent-label select {
+  padding: 4px 8px;
+  border-radius: 5px;
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--text-h);
-  font-size: 14px;
+  font-size: 12px;
   cursor: pointer;
 }
 
+/* ── Buttons ── */
 button {
-  padding: 8px 18px;
-  border-radius: 6px;
+  padding: 5px 12px;
+  border-radius: 5px;
   border: none;
   background: var(--accent);
   color: #fff;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: opacity 0.15s;
+  white-space: nowrap;
 }
 
-button:hover {
+button:hover:not(:disabled) {
   opacity: 0.85;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 button.secondary {
@@ -68,86 +97,163 @@ button.secondary {
   color: var(--text-h);
 }
 
-.error {
-  background: #fef2f2;
-  color: #b91c1c;
-  border: 1px solid #fca5a5;
-  border-radius: 6px;
-  padding: 10px 14px;
-  font-size: 14px;
+button.primary-btn {
+  background: var(--accent);
+  font-weight: 600;
+}
+
+/* ── Error banner ── */
+.error-banner {
+  background: #2d1515;
+  color: #ef4444;
+  border-bottom: 1px solid #7f1d1d;
+  padding: 6px 14px;
+  font-size: 12px;
   font-family: var(--mono);
+  flex-shrink: 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  .error {
-    background: #2d1515;
-    color: #f87171;
-    border-color: #7f1d1d;
-  }
-}
-
-.editors {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+/* ── Editor area ── */
+.editor-area {
   flex: 1;
+  min-height: 0;
 }
 
-@media (max-width: 700px) {
-  .editors {
-    grid-template-columns: 1fr;
-  }
+/* ── Split pane ── */
+.split-pane {
+  display: flex;
+  height: 100%;
+  width: 100%;
 }
 
-.editor-pane {
+.split-left,
+.split-right {
+  height: 100%;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.split-handle {
+  width: 5px;
+  flex-shrink: 0;
+  background: var(--border);
+  cursor: col-resize;
+  transition: background 0.15s;
+}
+
+.split-handle:hover,
+.split-handle:focus {
+  background: var(--accent);
+  outline: none;
+}
+
+/* ── CodeMirror editor wrapper ── */
+.code-editor {
+  height: 100%;
+  width: 100%;
+}
+
+.code-editor .cm-editor {
+  height: 100%;
+}
+
+/* ── Right pane ── */
+.right-pane {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  height: 100%;
+  border-left: 1px solid var(--border);
 }
 
-.editor-pane > label,
-.pane-header {
+/* ── Tab bar ── */
+.tab-bar {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--bg);
+}
+
+.tab-btn {
+  padding: 6px 14px;
+  border-radius: 0;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.tab-btn:hover:not(:disabled) {
+  color: var(--text-h);
+  opacity: 1;
+}
+
+.tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.tab-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── Placeholder tabs ── */
+.tab-placeholder {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  font-size: 13px;
-  font-weight: 600;
+  justify-content: center;
+  height: 100%;
   color: var(--text);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.editor-pane textarea {
-  flex: 1;
-  min-height: 400px;
-  padding: 14px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--code-bg);
-  color: var(--text-h);
-  font-family: var(--mono);
+  opacity: 0.45;
   font-size: 13px;
-  line-height: 1.6;
-  resize: vertical;
-  outline: none;
-  transition: border-color 0.15s;
 }
 
-.editor-pane textarea:focus {
-  border-color: var(--accent);
-}
-
-.copy-btn {
-  padding: 4px 12px;
-  font-size: 12px;
-  background: var(--accent-bg);
-  color: var(--accent);
-  border: 1px solid var(--accent-border);
-}
-
+/* ── Status bar ── */
 .status-bar {
-  font-size: 12px;
+  flex-shrink: 0;
+  padding: 3px 14px;
+  font-size: 11px;
   color: var(--text);
   opacity: 0.6;
-  text-align: right;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+
+/* ── Responsive: stack on mobile ── */
+@media (max-width: 700px) {
+  .split-pane {
+    flex-direction: column;
+  }
+
+  .split-left,
+  .split-right {
+    width: 100% !important;
+    height: 50%;
+  }
+
+  .split-handle {
+    width: 100%;
+    height: 5px;
+    cursor: row-resize;
+  }
+
+  .right-pane {
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+
+  .action-bar {
+    gap: 4px;
+  }
+
+  .action-group + .action-group {
+    padding-left: 4px;
+  }
 }

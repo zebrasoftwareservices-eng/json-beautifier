@@ -1,8 +1,9 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import App from "./App";
 import { processJson } from "./worker/jsonLogic";
+import { SAMPLE_JSON } from "./components/ActionBar";
 
 // Mock useJsonWorker to use the pure processJson function directly,
 // avoiding Worker instantiation which is not available in jsdom.
@@ -13,29 +14,93 @@ vi.mock("./worker/useJsonWorker", () => ({
   }),
 }));
 
+// Mock CodeEditor so tests don't need a real CodeMirror DOM environment.
+// Renders a plain textarea that mirrors value/onChange, identified by data-testid.
+vi.mock("./components/CodeEditor", () => ({
+  CodeEditor: ({
+    value,
+    onChange,
+    readOnly,
+    placeholder,
+  }: {
+    value: string;
+    onChange?: (v: string) => void;
+    readOnly?: boolean;
+    placeholder?: string;
+  }) => (
+    <textarea
+      data-testid={readOnly ? "output-editor" : "input-editor"}
+      value={value}
+      readOnly={readOnly}
+      placeholder={placeholder}
+      onChange={(e) => onChange && onChange(e.target.value)}
+    />
+  ),
+}));
+
+// Mock SplitPane — just render left then right children.
+vi.mock("./components/SplitPane", () => ({
+  SplitPane: ({
+    left,
+    right,
+  }: {
+    left: React.ReactNode;
+    right: React.ReactNode;
+  }) => (
+    <div>
+      {left}
+      {right}
+    </div>
+  ),
+}));
+
+// Mock RightPane — always render a single output textarea so the reference
+// stays stable across activeTab changes, plus expose a Code tab button.
+vi.mock("./components/RightPane", () => ({
+  RightPane: ({
+    output,
+    onTabChange,
+  }: {
+    output: string;
+    activeTab: string;
+    onTabChange: (tab: string) => void;
+  }) => (
+    <div>
+      <button onClick={() => onTabChange("code")}>Code</button>
+      <textarea
+        data-testid="output-editor"
+        readOnly
+        value={output}
+        onChange={() => {}}
+      />
+    </div>
+  ),
+}));
+
+// Helper: render App and return commonly used handles.
 function setup() {
   const user = userEvent.setup();
   render(<App />);
-  const inputArea = screen.getByLabelText("Input") as HTMLTextAreaElement;
-  const outputArea = screen.getByLabelText("Output") as HTMLTextAreaElement;
-  const beautifyBtn = screen.getByRole("button", { name: "Beautify" });
+  const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+  const outputArea = screen.getByTestId("output-editor") as HTMLTextAreaElement;
+  const formatBtn = screen.getByRole("button", { name: "Format" });
   const minifyBtn = screen.getByRole("button", { name: "Minify" });
-  return { user, inputArea, outputArea, beautifyBtn, minifyBtn };
+  return { user, inputArea, outputArea, formatBtn, minifyBtn };
 }
 
-// Helper to set textarea value without triggering userEvent's key parser
+// Helper to fire a change event on a textarea without userEvent key parsing.
 function setInput(textarea: HTMLTextAreaElement, value: string) {
   fireEvent.change(textarea, { target: { value } });
 }
 
 const validJson = '{"name":"Alice","age":30}';
 
-describe("beautify", () => {
+describe("Format (beautify)", () => {
   it("formats valid JSON with 2-space indent by default", async () => {
-    const { user, inputArea, outputArea, beautifyBtn } = setup();
+    const { user, inputArea, outputArea, formatBtn } = setup();
 
     setInput(inputArea, validJson);
-    await user.click(beautifyBtn);
+    await user.click(formatBtn);
 
     expect(outputArea.value).toBe(
       JSON.stringify({ name: "Alice", age: 30 }, null, 2),
@@ -43,46 +108,44 @@ describe("beautify", () => {
   });
 
   it("formats valid JSON with 4-space indent when selected", async () => {
-    const { user, inputArea, outputArea, beautifyBtn } = setup();
+    const { user, inputArea, outputArea, formatBtn } = setup();
 
     const indentSelect = screen.getByRole("combobox");
     await user.selectOptions(indentSelect, "4");
     setInput(inputArea, validJson);
-    await user.click(beautifyBtn);
+    await user.click(formatBtn);
 
     expect(outputArea.value).toBe(
       JSON.stringify({ name: "Alice", age: 30 }, null, 4),
     );
   });
 
-  it("shows an error message for invalid JSON", async () => {
-    const { user, inputArea, beautifyBtn } = setup();
+  it("shows an error banner for invalid JSON", async () => {
+    const { user, inputArea, formatBtn } = setup();
 
     setInput(inputArea, "not valid json");
-    await user.click(beautifyBtn);
+    await user.click(formatBtn);
 
-    const error = document.querySelector(".error");
-    expect(error).toBeInTheDocument();
-    expect(error?.textContent).toBeTruthy();
+    const banner = document.querySelector(".error-banner");
+    expect(banner).toBeInTheDocument();
+    expect(banner?.textContent).toBeTruthy();
   });
 
   it("clears output when input becomes invalid after a previous valid run", async () => {
-    const { user, inputArea, outputArea, beautifyBtn } = setup();
+    const { user, inputArea, outputArea, formatBtn } = setup();
 
-    // First a valid run
     setInput(inputArea, validJson);
-    await user.click(beautifyBtn);
+    await user.click(formatBtn);
     expect(outputArea.value).not.toBe("");
 
-    // Now type invalid JSON
     setInput(inputArea, "{bad}");
-    await user.click(beautifyBtn);
+    await user.click(formatBtn);
 
     expect(outputArea.value).toBe("");
   });
 });
 
-describe("minify", () => {
+describe("Minify", () => {
   it("compacts valid JSON to a single line", async () => {
     const { user, inputArea, outputArea, minifyBtn } = setup();
 
@@ -93,14 +156,56 @@ describe("minify", () => {
     expect(outputArea.value).toBe('{"name":"Alice","age":30}');
   });
 
-  it("shows an error message for invalid JSON", async () => {
+  it("shows an error banner for invalid JSON", async () => {
     const { user, inputArea, minifyBtn } = setup();
 
     setInput(inputArea, "not valid json");
     await user.click(minifyBtn);
 
-    const error = document.querySelector(".error");
-    expect(error).toBeInTheDocument();
-    expect(error?.textContent).toBeTruthy();
+    const banner = document.querySelector(".error-banner");
+    expect(banner).toBeInTheDocument();
+    expect(banner?.textContent).toBeTruthy();
+  });
+});
+
+describe("Sample button", () => {
+  it("loads sample JSON into the input editor", async () => {
+    const { user, inputArea } = setup();
+
+    const sampleBtn = screen.getByRole("button", { name: "Sample" });
+    await user.click(sampleBtn);
+
+    expect(inputArea.value).toBe(SAMPLE_JSON);
+  });
+});
+
+describe("Clear button", () => {
+  it("clears input and output after a format run", async () => {
+    const { user, inputArea, outputArea, formatBtn } = setup();
+
+    setInput(inputArea, validJson);
+    await user.click(formatBtn);
+    expect(outputArea.value).not.toBe("");
+
+    const clearBtn = screen.getByRole("button", { name: "Clear" });
+    await act(async () => {
+      await user.click(clearBtn);
+    });
+
+    expect(inputArea.value).toBe("");
+    expect(outputArea.value).toBe("");
+  });
+
+  it("also clears any error banner", async () => {
+    const { user, inputArea, formatBtn } = setup();
+
+    setInput(inputArea, "bad json");
+    await user.click(formatBtn);
+    expect(document.querySelector(".error-banner")).toBeInTheDocument();
+
+    const clearBtn = screen.getByRole("button", { name: "Clear" });
+    await user.click(clearBtn);
+
+    expect(document.querySelector(".error-banner")).not.toBeInTheDocument();
   });
 });
