@@ -41,15 +41,17 @@ export function processJson(
   input: string,
   indent = 2,
 ): ProcessJsonResult {
-  if (input.length > MAX_INPUT_BYTES) {
+  const inputBytes = new TextEncoder().encode(input).length;
+  if (inputBytes > MAX_INPUT_BYTES) {
     return {
       ok: false,
-      message: `Input exceeds 1 MB limit (${(input.length / 1_000_000).toFixed(1)} MB). Large file support is coming soon.`,
+      message: `Input exceeds 1 MB limit (${(inputBytes / 1_000_000).toFixed(1)} MB). Large file support is coming soon.`,
     };
   }
 
+  const normalizedIndent = Number.isFinite(indent) ? Math.trunc(indent) : 2;
   const clampedIndent =
-    type === "beautify" ? Math.max(1, Math.min(8, Math.trunc(indent) || 2)) : 0;
+    type === "beautify" ? Math.max(1, Math.min(8, normalizedIndent)) : 0;
 
   const t0 = performance.now();
 
