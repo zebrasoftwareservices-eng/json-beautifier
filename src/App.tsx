@@ -1,32 +1,57 @@
 import { useState } from "react";
 import "./App.css";
+import { useJsonWorker } from "./worker/useJsonWorker";
 
 export default function App() {
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
   const [error, setError] = useState("");
+  const [errorLine, setErrorLine] = useState<number | undefined>();
+  const [errorCol, setErrorCol] = useState<number | undefined>();
   const [indent, setIndent] = useState(2);
   const [copied, setCopied] = useState(false);
+  const [parseTimeMs, setParseTimeMs] = useState<number | null>(null);
+  const [processing, setProcessing] = useState(false);
 
-  function beautify() {
-    try {
-      const parsed: unknown = JSON.parse(input);
-      setOutput(JSON.stringify(parsed, null, indent));
+  const { process } = useJsonWorker();
+
+  async function beautify() {
+    if (!input.trim()) return;
+    setProcessing(true);
+    const result = await process("beautify", input, indent);
+    setProcessing(false);
+    if (result.ok) {
+      setOutput(result.result);
+      setParseTimeMs(result.parseTimeMs);
       setError("");
-    } catch (e) {
-      setError((e as Error).message);
+      setErrorLine(undefined);
+      setErrorCol(undefined);
+    } else {
+      setError(result.message);
+      setErrorLine(result.line);
+      setErrorCol(result.column);
       setOutput("");
+      setParseTimeMs(null);
     }
   }
 
-  function minify() {
-    try {
-      const parsed: unknown = JSON.parse(input);
-      setOutput(JSON.stringify(parsed));
+  async function minify() {
+    if (!input.trim()) return;
+    setProcessing(true);
+    const result = await process("minify", input);
+    setProcessing(false);
+    if (result.ok) {
+      setOutput(result.result);
+      setParseTimeMs(result.parseTimeMs);
       setError("");
-    } catch (e) {
-      setError((e as Error).message);
+      setErrorLine(undefined);
+      setErrorCol(undefined);
+    } else {
+      setError(result.message);
+      setErrorLine(result.line);
+      setErrorCol(result.column);
       setOutput("");
+      setParseTimeMs(null);
     }
   }
 
@@ -34,6 +59,9 @@ export default function App() {
     setInput("");
     setOutput("");
     setError("");
+    setErrorLine(undefined);
+    setErrorCol(undefined);
+    setParseTimeMs(null);
     setCopied(false);
   }
 
@@ -47,6 +75,12 @@ export default function App() {
       setError("Copy failed — please copy the output manually.");
     }
   }
+
+  const errorLabel =
+    error &&
+    (errorLine != null
+      ? `Error at line ${errorLine}${errorCol != null ? `, col ${errorCol}` : ""}: ${error}`
+      : error);
 
   return (
     <div className="app">
@@ -66,14 +100,18 @@ export default function App() {
             <option value={4}>4 spaces</option>
           </select>
         </label>
-        <button onClick={beautify}>Beautify</button>
-        <button onClick={minify}>Minify</button>
-        <button onClick={clear} className="secondary">
+        <button onClick={beautify} disabled={processing}>
+          {processing ? "Working…" : "Beautify"}
+        </button>
+        <button onClick={minify} disabled={processing}>
+          Minify
+        </button>
+        <button onClick={clear} className="secondary" disabled={processing}>
           Clear
         </button>
       </div>
 
-      {error && <div className="error">{error}</div>}
+      {errorLabel && <div className="error">{errorLabel}</div>}
 
       <div className="editors">
         <div className="editor-pane">
@@ -101,6 +139,10 @@ export default function App() {
           />
         </div>
       </div>
+
+      {parseTimeMs !== null && (
+        <div className="status-bar">Parsed in {parseTimeMs} ms</div>
+      )}
     </div>
   );
 }

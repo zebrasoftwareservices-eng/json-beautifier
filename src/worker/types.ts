@@ -1,0 +1,20 @@
+export type WorkerRequest =
+  | { id: number; type: "beautify"; input: string; indent: number }
+  | { id: number; type: "minify"; input: string };
+
+export type WorkerSuccess = {
+  id: number;
+  ok: true;
+  result: string;
+  parseTimeMs: number;
+};
+
+export type WorkerError = {
+  id: number;
+  ok: false;
+  message: string;
+  line?: number;
+  column?: number;
+};
+
+export type WorkerResponse = WorkerSuccess | WorkerError;
