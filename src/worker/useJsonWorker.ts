@@ -1,4 +1,4 @@
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useEffect } from "react";
 import type { WorkerRequest, WorkerResponse } from "./types";
 
 export type WorkerResult =
@@ -10,6 +10,18 @@ let nextId = 0;
 export function useJsonWorker() {
   const workerRef = useRef<Worker | null>(null);
   const pendingRef = useRef(new Map<number, (r: WorkerResult) => void>());
+
+  useEffect(() => {
+    const pending = pendingRef.current;
+    return () => {
+      workerRef.current?.terminate();
+      workerRef.current = null;
+      for (const resolve of pending.values()) {
+        resolve({ ok: false, message: "Worker was terminated." });
+      }
+      pending.clear();
+    };
+  }, []);
 
   function getWorker(): Worker {
     if (!workerRef.current) {
@@ -26,7 +38,6 @@ export function useJsonWorker() {
         }
       };
       workerRef.current.onerror = () => {
-        // Reject all pending promises so the UI doesn't freeze on processing
         for (const resolve of pendingRef.current.values()) {
           resolve({
             ok: false,
@@ -34,7 +45,7 @@ export function useJsonWorker() {
           });
         }
         pendingRef.current.clear();
-        workerRef.current = null; // allow re-init on next use
+        workerRef.current = null;
       };
     }
     return workerRef.current;
@@ -53,7 +64,18 @@ export function useJsonWorker() {
           type === "beautify"
             ? { id, type, input, indent }
             : { id, type, input };
-        getWorker().postMessage(req);
+        try {
+          getWorker().postMessage(req);
+        } catch (err) {
+          pendingRef.current.delete(id);
+          resolve({
+            ok: false,
+            message:
+              err instanceof Error
+                ? err.message
+                : "Failed to start JSON processing worker.",
+          });
+        }
       }),
     [],
   );

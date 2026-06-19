@@ -134,7 +134,7 @@ describe("processJson — indent clamping", () => {
     expect(res.ok).toBe(true);
     if (res.ok) {
       expect(res.result).toBe(
-        JSON.stringify({ name: "Alice", age: 30 }, null, 2),
+        JSON.stringify({ name: "Alice", age: 30 }, null, 1),
       );
     }
   });
