@@ -15,7 +15,9 @@ beforeEach(() => {
   // jsdom has no ResizeObserver — provide a no-op stub so the component mounts
   // without throwing. The containerHeight state stays at its default 400 px,
   // which is more than enough to show the small fixtures used in these tests.
-  global.ResizeObserver = class {
+  (
+    globalThis as typeof globalThis & { ResizeObserver: unknown }
+  ).ResizeObserver = class {
     observe() {}
     unobserve() {}
     disconnect() {}
