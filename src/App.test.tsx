@@ -9,17 +9,24 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, afterEach } from "vitest";
 import App from "./App";
 import { processJson } from "./worker/jsonLogic";
+import { repairJson } from "./worker/jsonRepair";
 import { SAMPLE_JSON } from "./components/ActionBar";
+import type { RepairResult } from "./components/RightPane";
 
-// Mock useJsonWorker to use the pure processJson function directly,
+// Mock useJsonWorker to use the pure processJson/repairJson functions directly,
 // avoiding Worker instantiation which is not available in jsdom.
 vi.mock("./worker/useJsonWorker", () => ({
   useJsonWorker: () => ({
     process: (
-      type: "beautify" | "minify" | "validate",
+      type: "beautify" | "minify" | "validate" | "repair",
       input: string,
       indent = 2,
-    ) => Promise.resolve(processJson(type, input, indent)),
+    ) => {
+      if (type === "repair") {
+        return Promise.resolve(repairJson(input));
+      }
+      return Promise.resolve(processJson(type, input, indent));
+    },
   }),
 }));
 
@@ -78,16 +85,21 @@ vi.mock("./components/SplitPane", () => ({
 }));
 
 // Mock RightPane — always render a single output textarea so the reference
-// stays stable across activeTab changes, plus expose a Code tab button.
+// stays stable across activeTab changes, plus expose a Code tab button and
+// repair-related UI for testing.
 vi.mock("./components/RightPane", () => ({
   RightPane: ({
     output,
     activeTab,
     onTabChange,
+    repairResult,
+    onAcceptRepair,
   }: {
     output: string;
     activeTab: string;
     onTabChange: (tab: string) => void;
+    repairResult?: RepairResult | null;
+    onAcceptRepair?: (text: string) => void;
   }) => (
     <div>
       <button onClick={() => onTabChange("code")}>Code</button>
@@ -98,6 +110,27 @@ vi.mock("./components/RightPane", () => ({
         value={output}
         onChange={() => {}}
       />
+      {repairResult === null || repairResult === undefined ? (
+        <span data-testid="repair-empty">
+          Click Repair when JSON is invalid
+        </span>
+      ) : repairResult.ok ? (
+        <div data-testid="repair-success">
+          <ul data-testid="repair-fixes">
+            {repairResult.fixes.map((f, i) => (
+              <li key={i}>{f}</li>
+            ))}
+          </ul>
+          <button onClick={() => onAcceptRepair?.(repairResult.result)}>
+            Accept repair
+          </button>
+        </div>
+      ) : (
+        <div data-testid="repair-fail">
+          <span>Could not auto-repair</span>
+          <span data-testid="repair-message">{repairResult.message}</span>
+        </div>
+      )}
     </div>
   ),
 }));
@@ -595,6 +628,144 @@ describe("handleSample resets validation state", () => {
 
     // After clicking Sample, validationStatus resets to idle → "Ready" shown
     expect(statusBar?.textContent).toMatch(/Ready/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// JSO-13: Repair feature
+// ---------------------------------------------------------------------------
+
+describe("Repair button enabled/disabled state", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("Repair button is disabled when input is empty (idle state)", () => {
+    render(<App />);
+    const repairBtn = screen.getByRole("button", { name: /repair/i });
+    expect(repairBtn).toBeDisabled();
+  });
+
+  it("Repair button is disabled when input is valid JSON (after debounce)", async () => {
+    vi.useFakeTimers();
+    render(<App />);
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    fireEvent.change(inputArea, { target: { value: '{"a":1}' } });
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+    const repairBtn = screen.getByRole("button", { name: /repair/i });
+    expect(repairBtn).toBeDisabled();
+  });
+
+  it("Repair button is enabled when input is invalid JSON (after debounce)", async () => {
+    vi.useFakeTimers();
+    render(<App />);
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    fireEvent.change(inputArea, { target: { value: "not valid json" } });
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+    const repairBtn = screen.getByRole("button", { name: /repair/i });
+    expect(repairBtn).not.toBeDisabled();
+  });
+});
+
+describe("Repair button click behavior", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("clicking Repair with invalid JSON switches activeTab to 'repair'", async () => {
+    vi.useFakeTimers();
+    render(<App />);
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    fireEvent.change(inputArea, { target: { value: "not valid json" } });
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+    const repairBtn = screen.getByRole("button", { name: /repair/i });
+    await act(async () => {
+      fireEvent.click(repairBtn);
+    });
+    expect(screen.getByTestId("active-tab").textContent).toBe("repair");
+  });
+
+  it("clicking Repair with fixable JSON (trailing comma) shows fixes in right pane", async () => {
+    vi.useFakeTimers();
+    render(<App />);
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    fireEvent.change(inputArea, { target: { value: '{"a":1,}' } });
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+    const repairBtn = screen.getByRole("button", { name: /repair/i });
+    await act(async () => {
+      fireEvent.click(repairBtn);
+    });
+    expect(screen.getByTestId("repair-success")).toBeInTheDocument();
+    expect(screen.getByTestId("repair-fixes").textContent).toMatch(
+      /trailing comma/i,
+    );
+    expect(screen.getByTestId("active-tab").textContent).toBe("repair");
+  });
+
+  it("clicking Repair with irreparably broken JSON shows failure state", async () => {
+    vi.useFakeTimers();
+    render(<App />);
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    fireEvent.change(inputArea, { target: { value: "{{{{" } });
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+    const repairBtn = screen.getByRole("button", { name: /repair/i });
+    await act(async () => {
+      fireEvent.click(repairBtn);
+    });
+    expect(screen.getByTestId("repair-fail")).toBeInTheDocument();
+    expect(screen.getByText("Could not auto-repair")).toBeInTheDocument();
+  });
+
+  it("clicking 'Accept repair' updates input editor and switches to 'tree' tab", async () => {
+    vi.useFakeTimers();
+    render(<App />);
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    fireEvent.change(inputArea, { target: { value: '{"a":1,}' } });
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+    const repairBtn = screen.getByRole("button", { name: /repair/i });
+    await act(async () => {
+      fireEvent.click(repairBtn);
+    });
+    expect(screen.getByTestId("repair-success")).toBeInTheDocument();
+    const acceptBtn = screen.getByRole("button", { name: /accept repair/i });
+    await act(async () => {
+      fireEvent.click(acceptBtn);
+    });
+    expect(screen.getByTestId("active-tab").textContent).toBe("tree");
+    // input should now be the repaired (valid) JSON
+    expect(inputArea.value).not.toContain(",}");
+  });
+
+  it("Clear button resets repairResult (repair panel shows empty state)", async () => {
+    vi.useFakeTimers();
+    render(<App />);
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    fireEvent.change(inputArea, { target: { value: '{"a":1,}' } });
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+    const repairBtn = screen.getByRole("button", { name: /repair/i });
+    await act(async () => {
+      fireEvent.click(repairBtn);
+    });
+    expect(screen.getByTestId("repair-success")).toBeInTheDocument();
+    const clearBtn = screen.getByRole("button", { name: "Clear" });
+    await act(async () => {
+      fireEvent.click(clearBtn);
+    });
+    expect(screen.getByTestId("repair-empty")).toBeInTheDocument();
   });
 });
 

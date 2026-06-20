@@ -1,7 +1,8 @@
 export type WorkerRequest =
   | { id: number; type: "beautify"; input: string; indent: number }
   | { id: number; type: "minify"; input: string }
-  | { id: number; type: "validate"; input: string };
+  | { id: number; type: "validate"; input: string }
+  | { id: number; type: "repair"; input: string };
 
 export type WorkerSuccess = {
   id: number;
@@ -9,6 +10,7 @@ export type WorkerSuccess = {
   result: string;
   parseTimeMs: number;
   nodeCount?: number;
+  fixes?: string[];
 };
 
 export type WorkerError = {

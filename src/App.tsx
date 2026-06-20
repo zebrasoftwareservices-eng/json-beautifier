@@ -4,7 +4,11 @@ import { useJsonWorker } from "./worker/useJsonWorker";
 import { CodeEditor, type CodeEditorError } from "./components/CodeEditor";
 import { SplitPane } from "./components/SplitPane";
 import { ActionBar, SAMPLE_JSON } from "./components/ActionBar";
-import { RightPane, type TabId } from "./components/RightPane";
+import {
+  RightPane,
+  type TabId,
+  type RepairResult,
+} from "./components/RightPane";
 
 const INSTANT_LIMIT = 5 * 1_000_000; // 5 MB — read without progress indicator
 const MAX_FILE_BYTES = 25 * 1_000_000; // 25 MB — hard limit
@@ -45,6 +49,7 @@ export default function App() {
   >("idle");
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [repairResult, setRepairResult] = useState<RepairResult | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const latestLoadIdRef = useRef(0);
@@ -197,6 +202,38 @@ export default function App() {
     }
   }
 
+  async function handleRepair() {
+    if (!input.trim()) return;
+    setProcessing(true);
+    try {
+      const result = await process("repair", input);
+      if (result.ok) {
+        setRepairResult({
+          ok: true,
+          result: result.result,
+          fixes: result.fixes ?? [],
+        });
+      } else {
+        setRepairResult({ ok: false, message: result.message });
+      }
+      setActiveTab("repair");
+    } catch {
+      setRepairResult({
+        ok: false,
+        message: "Repair failed — please try again.",
+      });
+      setActiveTab("repair");
+    } finally {
+      setProcessing(false);
+    }
+  }
+
+  function handleAcceptRepair(text: string) {
+    setInput(text);
+    setRepairResult(null);
+    setActiveTab("tree");
+  }
+
   function handleClear() {
     if (autoFormatTimerRef.current) clearTimeout(autoFormatTimerRef.current);
     if (validateTimerRef.current) clearTimeout(validateTimerRef.current);
@@ -208,6 +245,7 @@ export default function App() {
     setFileName(null);
     setNodeCount(null);
     setValidationStatus("idle");
+    setRepairResult(null);
   }
 
   async function handleCopy() {
@@ -250,6 +288,7 @@ export default function App() {
     setFileName(null);
     setNodeCount(null);
     setValidationStatus("idle");
+    setRepairResult(null);
   }
 
   const handleValidate = useCallback(
@@ -372,10 +411,12 @@ export default function App() {
         onPaste={handlePaste}
         onSample={handleSample}
         onUpload={handleUploadClick}
+        onRepair={handleRepair}
         processing={processing}
         copyLabel={copyLabel}
         autoFormat={autoFormat}
         onAutoFormatChange={setAutoFormat}
+        repairEnabled={validationStatus === "invalid"}
       />
 
       {errorLabel && <div className="error-banner">{errorLabel}</div>}
@@ -425,6 +466,8 @@ export default function App() {
               onTabChange={setActiveTab}
               error={error}
               input={input}
+              repairResult={repairResult}
+              onAcceptRepair={handleAcceptRepair}
             />
           }
         />

@@ -19,10 +19,12 @@ interface ActionBarProps {
   onPaste: () => void;
   onSample: () => void;
   onUpload: () => void;
+  onRepair: () => void;
   processing: boolean;
   copyLabel?: string;
   autoFormat?: boolean;
   onAutoFormatChange?: (v: boolean) => void;
+  repairEnabled?: boolean;
 }
 
 export function ActionBar({
@@ -35,10 +37,12 @@ export function ActionBar({
   onPaste,
   onSample,
   onUpload,
+  onRepair,
   processing,
   copyLabel = "Copy",
   autoFormat = true,
   onAutoFormatChange,
+  repairEnabled = false,
 }: ActionBarProps) {
   return (
     <div className="action-bar">
@@ -104,7 +108,16 @@ export function ActionBar({
         <button className="secondary" disabled title="Validate — coming soon">
           Validate
         </button>
-        <button className="secondary" disabled title="Repair — coming soon">
+        <button
+          className="secondary"
+          onClick={onRepair}
+          disabled={processing || !repairEnabled}
+          title={
+            repairEnabled
+              ? "Auto-repair common JSON issues"
+              : "Repair — available when JSON is invalid"
+          }
+        >
           Repair
         </button>
       </div>

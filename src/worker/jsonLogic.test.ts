@@ -236,12 +236,12 @@ describe("processJson — validate", () => {
     }
   });
 
-  it("returns ok: false when input exceeds 1 MB", () => {
+  it("returns ok: false when input exceeds 25 MB", () => {
     const huge = "x".repeat(MAX_INPUT_BYTES + 1);
     const res = processJson("validate", huge);
     expect(res.ok).toBe(false);
     if (!res.ok) {
-      expect(res.message).toMatch(/1 MB/i);
+      expect(res.message).toMatch(/25 MB/i);
     }
   });
 
