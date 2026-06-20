@@ -20,12 +20,15 @@ export default function App() {
 
   const { process } = useJsonWorker();
   const autoFormatTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const formatInFlightRef = useRef(false);
 
   // Accepts optional content to format (avoids stale closure on state)
   const handleFormat = useCallback(
     async (content?: string) => {
       const toFormat = content ?? input;
       if (!toFormat.trim()) return;
+      if (formatInFlightRef.current) return;
+      formatInFlightRef.current = true;
       setProcessing(true);
       try {
         const result = await process("beautify", toFormat, indent);
@@ -48,6 +51,7 @@ export default function App() {
         setOutput("");
         setParseTimeMs(null);
       } finally {
+        formatInFlightRef.current = false;
         setProcessing(false);
       }
     },
@@ -83,6 +87,7 @@ export default function App() {
   }
 
   function handleClear() {
+    if (autoFormatTimerRef.current) clearTimeout(autoFormatTimerRef.current);
     setInput("");
     setOutput("");
     setError(null);
@@ -122,6 +127,7 @@ export default function App() {
   }
 
   function handleSample() {
+    if (autoFormatTimerRef.current) clearTimeout(autoFormatTimerRef.current);
     setInput(SAMPLE_JSON);
     setOutput("");
     setError(null);
