@@ -1,4 +1,10 @@
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  act,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, afterEach } from "vitest";
 import App from "./App";
@@ -668,14 +674,13 @@ describe("Upload button / file picker", () => {
     ) as HTMLInputElement;
     const file = makeFile("data.json", '{"hello":"world"}');
 
-    await act(async () => {
-      fireEvent.change(fileInput, { target: { files: [file] } });
-      await new Promise((r) => setTimeout(r, 10));
-    });
+    fireEvent.change(fileInput, { target: { files: [file] } });
 
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    await waitFor(() =>
+      expect(screen.getByText("data.json")).toBeInTheDocument(),
+    );
     expect(inputArea.value).toBe('{"hello":"world"}');
-    expect(screen.getByText("data.json")).toBeInTheDocument();
   });
 
   it("selecting a .txt file is accepted without error", async () => {
@@ -687,13 +692,33 @@ describe("Upload button / file picker", () => {
     ) as HTMLInputElement;
     const file = makeFile("notes.txt", "plain text content", "text/plain");
 
-    await act(async () => {
-      fireEvent.change(fileInput, { target: { files: [file] } });
-      await new Promise((r) => setTimeout(r, 10));
-    });
+    fireEvent.change(fileInput, { target: { files: [file] } });
 
+    await waitFor(() =>
+      expect(screen.getByText("notes.txt")).toBeInTheDocument(),
+    );
     expect(document.querySelector(".error-banner")).not.toBeInTheDocument();
-    expect(screen.getByText("notes.txt")).toBeInTheDocument();
+  });
+
+  it("selecting a .jsonl file is accepted without error", async () => {
+    mockFileReader('{"a":1}\n{"b":2}');
+    render(<App />);
+
+    const fileInput = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const file = makeFile(
+      "lines.jsonl",
+      '{"a":1}\n{"b":2}',
+      "application/jsonl",
+    );
+
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() =>
+      expect(screen.getByText("lines.jsonl")).toBeInTheDocument(),
+    );
+    expect(document.querySelector(".error-banner")).not.toBeInTheDocument();
   });
 
   it("selecting an unsupported extension shows error, does not change input", async () => {
@@ -750,14 +775,14 @@ describe("Upload button / file picker", () => {
     ) as HTMLInputElement;
     const file = makeFile("broken.json", "");
 
-    await act(async () => {
-      fireEvent.change(fileInput, { target: { files: [file] } });
-      await new Promise((r) => setTimeout(r, 10));
-    });
+    fireEvent.change(fileInput, { target: { files: [file] } });
 
-    const banner = document.querySelector(".error-banner");
-    expect(banner).toBeInTheDocument();
-    expect(banner?.textContent).toMatch(/failed to read/i);
+    await waitFor(() =>
+      expect(document.querySelector(".error-banner")).toBeInTheDocument(),
+    );
+    expect(document.querySelector(".error-banner")?.textContent).toMatch(
+      /failed to read/i,
+    );
   });
 });
 
@@ -780,16 +805,15 @@ describe("Drag-and-drop", () => {
     const dropZone = getDropZone();
     const file = makeFile("dropped.json", '{"dropped":true}');
 
-    await act(async () => {
-      fireEvent.drop(dropZone, {
-        dataTransfer: { files: [file] },
-      });
-      await new Promise((r) => setTimeout(r, 10));
+    fireEvent.drop(dropZone, {
+      dataTransfer: { files: [file] },
     });
 
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    await waitFor(() =>
+      expect(screen.getByText("dropped.json")).toBeInTheDocument(),
+    );
     expect(inputArea.value).toBe('{"dropped":true}');
-    expect(screen.getByText("dropped.json")).toBeInTheDocument();
   });
 
   it("dropping an unsupported file type shows error, does not change input", async () => {
@@ -853,14 +877,11 @@ describe("File size and progress indicator", () => {
     // default File size is tiny — well under 5 MB
     const file = makeFile("small.json", '{"small":true}');
 
-    await act(async () => {
-      fireEvent.change(fileInput, { target: { files: [file] } });
-      await new Promise((r) => setTimeout(r, 10));
-    });
+    fireEvent.change(fileInput, { target: { files: [file] } });
 
-    expect(
-      document.querySelector('[role="progressbar"]'),
-    ).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByRole("progressbar")).not.toBeInTheDocument(),
+    );
   });
 
   it("file > 5 MB shows progress bar while reading then removes it after load", async () => {
@@ -946,13 +967,12 @@ describe("File name in header", () => {
     ) as HTMLInputElement;
     const file = makeFile("mydata.json", '{"x":1}');
 
-    await act(async () => {
-      fireEvent.change(fileInput, { target: { files: [file] } });
-      await new Promise((r) => setTimeout(r, 10));
-    });
+    fireEvent.change(fileInput, { target: { files: [file] } });
 
-    expect(document.querySelector("span.file-name")?.textContent).toBe(
-      "mydata.json",
+    await waitFor(() =>
+      expect(document.querySelector("span.file-name")?.textContent).toBe(
+        "mydata.json",
+      ),
     );
   });
 
@@ -966,12 +986,11 @@ describe("File name in header", () => {
     ) as HTMLInputElement;
     const file = makeFile("temp.json", '{"x":1}');
 
-    await act(async () => {
-      fireEvent.change(fileInput, { target: { files: [file] } });
-      await new Promise((r) => setTimeout(r, 10));
-    });
+    fireEvent.change(fileInput, { target: { files: [file] } });
 
-    expect(document.querySelector("span.file-name")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(document.querySelector("span.file-name")).toBeInTheDocument(),
+    );
 
     await user.click(screen.getByRole("button", { name: "Clear" }));
 

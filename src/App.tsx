@@ -47,6 +47,7 @@ export default function App() {
   const [isDragging, setIsDragging] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const latestLoadIdRef = useRef(0);
   const { process } = useJsonWorker();
   const autoFormatTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const validateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -91,11 +92,14 @@ export default function App() {
   );
 
   async function handleFileLoad(file: File) {
-    const ext = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
+    const dotIndex = file.name.lastIndexOf(".");
+    const ext = dotIndex >= 0 ? file.name.slice(dotIndex).toLowerCase() : "";
+    const loadId = ++latestLoadIdRef.current;
     if (!ALLOWED_EXTENSIONS.has(ext)) {
       setError({
         message: `Unsupported file type "${ext || "(none)"}". Please upload a .json, .jsonl, or .txt file.`,
       });
+      setValidationStatus("invalid");
       return;
     }
 
@@ -103,6 +107,7 @@ export default function App() {
       setError({
         message: `File "${file.name}" is ${(file.size / 1_000_000).toFixed(1)} MB — exceeds 25 MB limit. Pro plan supports up to 100 MB.`,
       });
+      setValidationStatus("invalid");
       return;
     }
 
@@ -115,16 +120,21 @@ export default function App() {
         file,
         needsProgress ? setUploadProgress : undefined,
       );
+      if (loadId !== latestLoadIdRef.current) return;
       setInput(text);
       setOutput("");
       setParseTimeMs(null);
       setFileName(file.name);
     } catch {
+      if (loadId !== latestLoadIdRef.current) return;
       setError({
         message: `Failed to read "${file.name}" — please try again.`,
       });
+      setValidationStatus("invalid");
     } finally {
-      if (needsProgress) setUploadProgress(null);
+      if (needsProgress && loadId === latestLoadIdRef.current) {
+        setUploadProgress(null);
+      }
     }
   }
 
