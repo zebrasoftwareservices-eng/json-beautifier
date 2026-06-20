@@ -2,7 +2,7 @@ import { useRef, useCallback, useEffect } from "react";
 import type { WorkerRequest, WorkerResponse } from "./types";
 
 export type WorkerResult =
-  | { ok: true; result: string; parseTimeMs: number }
+  | { ok: true; result: string; parseTimeMs: number; nodeCount?: number }
   | { ok: false; message: string; line?: number; column?: number };
 
 let nextId = 0;
@@ -53,7 +53,7 @@ export function useJsonWorker() {
 
   const process = useCallback(
     (
-      type: "beautify" | "minify",
+      type: "beautify" | "minify" | "validate",
       input: string,
       indent = 2,
     ): Promise<WorkerResult> =>

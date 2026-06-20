@@ -17,15 +17,23 @@ export default function App() {
   const [copyLabel, setCopyLabel] = useState("Copy");
   const [autoFormat, setAutoFormat] = useState(true);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [nodeCount, setNodeCount] = useState<number | null>(null);
+  const [validationStatus, setValidationStatus] = useState<
+    "idle" | "valid" | "invalid"
+  >("idle");
 
   const { process } = useJsonWorker();
   const autoFormatTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const validateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const formatInFlightRef = useRef(false);
 
   // Accepts optional content to format (avoids stale closure on state)
   const handleFormat = useCallback(
     async (content?: string) => {
       const toFormat = content ?? input;
       if (!toFormat.trim()) return;
+      if (formatInFlightRef.current) return;
+      formatInFlightRef.current = true;
       setProcessing(true);
       try {
         const result = await process("beautify", toFormat, indent);
@@ -42,12 +50,15 @@ export default function App() {
           });
           setOutput("");
           setParseTimeMs(null);
+          setValidationStatus("invalid");
         }
       } catch {
         setError({ message: "Formatting failed — please try again." });
         setOutput("");
         setParseTimeMs(null);
+        setValidationStatus("invalid");
       } finally {
+        formatInFlightRef.current = false;
         setProcessing(false);
       }
     },
@@ -72,23 +83,29 @@ export default function App() {
         });
         setOutput("");
         setParseTimeMs(null);
+        setValidationStatus("invalid");
       }
     } catch {
       setError({ message: "Minify failed — please try again." });
       setOutput("");
       setParseTimeMs(null);
+      setValidationStatus("invalid");
     } finally {
       setProcessing(false);
     }
   }
 
   function handleClear() {
+    if (autoFormatTimerRef.current) clearTimeout(autoFormatTimerRef.current);
+    if (validateTimerRef.current) clearTimeout(validateTimerRef.current);
     setInput("");
     setOutput("");
     setError(null);
     setParseTimeMs(null);
     setCopyLabel("Copy");
     setFileName(null);
+    setNodeCount(null);
+    setValidationStatus("idle");
   }
 
   async function handleCopy() {
@@ -122,12 +139,57 @@ export default function App() {
   }
 
   function handleSample() {
+    if (autoFormatTimerRef.current) clearTimeout(autoFormatTimerRef.current);
+    if (validateTimerRef.current) clearTimeout(validateTimerRef.current);
     setInput(SAMPLE_JSON);
     setOutput("");
     setError(null);
     setParseTimeMs(null);
     setFileName(null);
+    setNodeCount(null);
+    setValidationStatus("idle");
   }
+
+  const handleValidate = useCallback(
+    async (content?: string) => {
+      const toValidate = content ?? input;
+      if (!toValidate.trim()) {
+        setValidationStatus("idle");
+        setNodeCount(null);
+        setError(null);
+        return;
+      }
+      const result = await process("validate", toValidate);
+      if (result.ok) {
+        setError(null);
+        setNodeCount(result.nodeCount ?? null);
+        setParseTimeMs(result.parseTimeMs);
+        setValidationStatus("valid");
+      } else {
+        setError({
+          message: result.message,
+          line: result.line,
+          column: result.column,
+        });
+        setNodeCount(null);
+        setParseTimeMs(null);
+        setValidationStatus("invalid");
+        setActiveTab("error");
+      }
+    },
+    [input, process],
+  );
+
+  // Auto-validate on every input change (debounced 300ms)
+  useEffect(() => {
+    if (validateTimerRef.current) clearTimeout(validateTimerRef.current);
+    validateTimerRef.current = setTimeout(() => {
+      handleValidate(input);
+    }, 300);
+    return () => {
+      if (validateTimerRef.current) clearTimeout(validateTimerRef.current);
+    };
+  }, [input, handleValidate]);
 
   // Called by CodeEditor when user pastes directly into the editor
   const handleEditorPaste = useCallback(
@@ -141,30 +203,46 @@ export default function App() {
     [autoFormat, handleFormat],
   );
 
-  // Keyboard shortcut: Cmd/Ctrl+Shift+F → Format
+  // Keyboard shortcuts: Cmd/Ctrl+Shift+F → Format, Cmd/Ctrl+Shift+V → Validate
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "F") {
-        e.preventDefault();
-        handleFormat();
+      if (e.metaKey || e.ctrlKey) {
+        if (e.shiftKey && e.key === "F") {
+          e.preventDefault();
+          handleFormat();
+        } else if (e.shiftKey && e.key === "V") {
+          e.preventDefault();
+          handleValidate();
+        }
       }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [handleFormat]);
+  }, [handleFormat, handleValidate]);
 
-  // Cleanup debounce timer on unmount
+  // Cleanup debounce timers on unmount
   useEffect(() => {
     return () => {
       if (autoFormatTimerRef.current) clearTimeout(autoFormatTimerRef.current);
+      if (validateTimerRef.current) clearTimeout(validateTimerRef.current);
     };
   }, []);
 
-  const errorLabel = error
-    ? error.line != null
-      ? `Error at line ${error.line}${error.column != null ? `, col ${error.column}` : ""}: ${error.message}`
-      : error.message
-    : null;
+  const errorLabel =
+    validationStatus === "invalid" && error
+      ? error.line != null
+        ? `Invalid JSON — line ${error.line}${error.column != null ? `, col ${error.column}` : ""}: ${error.message}`
+        : `Invalid JSON: ${error.message}`
+      : null;
+
+  const statusText =
+    validationStatus === "valid" && nodeCount !== null && parseTimeMs !== null
+      ? `✓ Valid — ${nodeCount} node${nodeCount === 1 ? "" : "s"}, parsed in ${parseTimeMs} ms`
+      : validationStatus === "invalid" && error
+        ? error.line != null
+          ? `✗ Invalid JSON — line ${error.line}${error.column != null ? `, col ${error.column}` : ""}: ${error.message}`
+          : `✗ Invalid JSON: ${error.message}`
+        : "Ready — ⌘⇧F to format · ⌘⇧V to validate";
 
   return (
     <div className="app">
@@ -206,17 +284,15 @@ export default function App() {
               output={output}
               activeTab={activeTab}
               onTabChange={setActiveTab}
+              error={error}
+              input={input}
             />
           }
         />
       </div>
 
       <div className="status-bar">
-        {parseTimeMs !== null ? (
-          <span>Parsed in {parseTimeMs} ms</span>
-        ) : (
-          <span>Ready — ⌘⇧F to format</span>
-        )}
+        <span>{statusText}</span>
       </div>
     </div>
   );

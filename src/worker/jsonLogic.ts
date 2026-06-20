@@ -32,12 +32,28 @@ export function extractPosition(
   return {};
 }
 
+export function countNodes(value: unknown): number {
+  if (value === null || typeof value !== "object") return 1;
+  if (Array.isArray(value)) {
+    return (
+      1 + (value as unknown[]).reduce<number>((s, v) => s + countNodes(v), 0)
+    );
+  }
+  return (
+    1 +
+    Object.values(value as Record<string, unknown>).reduce<number>(
+      (s, v) => s + countNodes(v),
+      0,
+    )
+  );
+}
+
 export type ProcessJsonResult =
-  | { ok: true; result: string; parseTimeMs: number }
+  | { ok: true; result: string; parseTimeMs: number; nodeCount?: number }
   | { ok: false; message: string; line?: number; column?: number };
 
 export function processJson(
-  type: "beautify" | "minify",
+  type: "beautify" | "minify" | "validate",
   input: string,
   indent = 2,
 ): ProcessJsonResult {
@@ -57,11 +73,19 @@ export function processJson(
 
   try {
     const parsed: unknown = JSON.parse(input, safeReviver);
+    const parseTimeMs = Math.round((performance.now() - t0) * 100) / 100;
+    if (type === "validate") {
+      return {
+        ok: true,
+        result: "",
+        parseTimeMs,
+        nodeCount: countNodes(parsed),
+      };
+    }
     const result =
       type === "beautify"
         ? JSON.stringify(parsed, null, clampedIndent)
         : JSON.stringify(parsed);
-    const parseTimeMs = Math.round((performance.now() - t0) * 100) / 100;
     return { ok: true, result, parseTimeMs };
   } catch (err) {
     const message = (err as Error).message;

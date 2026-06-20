@@ -69,13 +69,15 @@ export function CodeEditor({
       linter(() => []),
       keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap]),
       EditorView.updateListener.of((update) => {
-        if (update.docChanged && onChangeRef.current) {
-          const newValue = update.state.doc.toString();
-          onChangeRef.current(newValue);
-          if (justPastedRef.current) {
-            justPastedRef.current = false;
-            onPasteRef.current?.(newValue);
-          }
+        if (!update.docChanged) {
+          if (justPastedRef.current) justPastedRef.current = false;
+          return;
+        }
+        const newValue = update.state.doc.toString();
+        onChangeRef.current?.(newValue);
+        if (justPastedRef.current) {
+          justPastedRef.current = false;
+          onPasteRef.current?.(newValue);
         }
       }),
       EditorView.domEventHandlers({

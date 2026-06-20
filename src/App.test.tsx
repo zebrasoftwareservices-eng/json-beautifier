@@ -9,8 +9,11 @@ import { SAMPLE_JSON } from "./components/ActionBar";
 // avoiding Worker instantiation which is not available in jsdom.
 vi.mock("./worker/useJsonWorker", () => ({
   useJsonWorker: () => ({
-    process: (type: "beautify" | "minify", input: string, indent = 2) =>
-      Promise.resolve(processJson(type, input, indent)),
+    process: (
+      type: "beautify" | "minify" | "validate",
+      input: string,
+      indent = 2,
+    ) => Promise.resolve(processJson(type, input, indent)),
   }),
 }));
 
@@ -73,6 +76,7 @@ vi.mock("./components/SplitPane", () => ({
 vi.mock("./components/RightPane", () => ({
   RightPane: ({
     output,
+    activeTab,
     onTabChange,
   }: {
     output: string;
@@ -81,6 +85,7 @@ vi.mock("./components/RightPane", () => ({
   }) => (
     <div>
       <button onClick={() => onTabChange("code")}>Code</button>
+      <span data-testid="active-tab">{activeTab}</span>
       <textarea
         data-testid="output-editor"
         readOnly
@@ -364,5 +369,225 @@ describe("Keyboard shortcut Cmd/Ctrl+Shift+F → Format", () => {
     });
 
     expect(outputArea.value).toBe("");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// JSO-12: Auto-validate debounce
+// ---------------------------------------------------------------------------
+
+describe("Auto-validate debounce", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("shows valid status in status bar after typing valid JSON and 300ms", async () => {
+    vi.useFakeTimers();
+    render(<App />);
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    fireEvent.change(inputArea, { target: { value: validJson } });
+
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+
+    const statusBar = document.querySelector(".status-bar");
+    expect(statusBar?.textContent).toMatch(/✓ Valid/);
+  });
+
+  it("shows node count and parse time in status bar for valid JSON", async () => {
+    vi.useFakeTimers();
+    render(<App />);
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    fireEvent.change(inputArea, { target: { value: validJson } });
+
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+
+    const statusBar = document.querySelector(".status-bar");
+    expect(statusBar?.textContent).toMatch(/node/);
+    expect(statusBar?.textContent).toMatch(/parsed in/);
+  });
+
+  it("shows invalid status in status bar after typing invalid JSON and 300ms", async () => {
+    vi.useFakeTimers();
+    render(<App />);
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    fireEvent.change(inputArea, { target: { value: "not valid" } });
+
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+
+    const statusBar = document.querySelector(".status-bar");
+    expect(statusBar?.textContent).toMatch(/✗ Invalid JSON/);
+  });
+
+  it("does NOT validate before the 300ms debounce window elapses", async () => {
+    vi.useFakeTimers();
+    render(<App />);
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    fireEvent.change(inputArea, { target: { value: validJson } });
+
+    await act(async () => {
+      vi.advanceTimersByTime(299);
+    });
+
+    const statusBar = document.querySelector(".status-bar");
+    // Should still show "Ready" — validate hasn't fired yet
+    expect(statusBar?.textContent).toMatch(/Ready/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// JSO-12: Keyboard shortcut Cmd/Ctrl+Shift+V → Validate
+// ---------------------------------------------------------------------------
+
+describe("Keyboard shortcut Cmd/Ctrl+Shift+V → Validate", () => {
+  it("validates immediately with Ctrl+Shift+V (no debounce wait)", async () => {
+    render(<App />);
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    setInput(inputArea, validJson);
+
+    await act(async () => {
+      fireEvent.keyDown(window, { ctrlKey: true, shiftKey: true, key: "V" });
+    });
+
+    const statusBar = document.querySelector(".status-bar");
+    expect(statusBar?.textContent).toMatch(/✓ Valid/);
+  });
+
+  it("validates immediately with Meta+Shift+V (Cmd on Mac)", async () => {
+    render(<App />);
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    setInput(inputArea, validJson);
+
+    await act(async () => {
+      fireEvent.keyDown(window, { metaKey: true, shiftKey: true, key: "V" });
+    });
+
+    const statusBar = document.querySelector(".status-bar");
+    expect(statusBar?.textContent).toMatch(/✓ Valid/);
+  });
+
+  it("does NOT validate when Shift+V is pressed without Ctrl/Meta", async () => {
+    render(<App />);
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    setInput(inputArea, validJson);
+
+    await act(async () => {
+      fireEvent.keyDown(window, { shiftKey: true, key: "V" });
+    });
+
+    const statusBar = document.querySelector(".status-bar");
+    // Status should remain "Ready" — no validate triggered
+    expect(statusBar?.textContent).toMatch(/Ready/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// JSO-12: Tab switching on validation
+// ---------------------------------------------------------------------------
+
+describe("Tab switching on validation result", () => {
+  it("switches activeTab to 'error' when invalid JSON is validated via keyboard shortcut", async () => {
+    render(<App />);
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    setInput(inputArea, "bad json");
+
+    await act(async () => {
+      fireEvent.keyDown(window, { ctrlKey: true, shiftKey: true, key: "V" });
+    });
+
+    const activeTab = screen.getByTestId("active-tab");
+    expect(activeTab.textContent).toBe("error");
+  });
+
+  it("does NOT switch to error tab when valid JSON is validated", async () => {
+    render(<App />);
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    setInput(inputArea, validJson);
+
+    await act(async () => {
+      fireEvent.keyDown(window, { ctrlKey: true, shiftKey: true, key: "V" });
+    });
+
+    const activeTab = screen.getByTestId("active-tab");
+    expect(activeTab.textContent).not.toBe("error");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// JSO-12: handleClear and handleSample reset validation state
+// ---------------------------------------------------------------------------
+
+describe("handleClear resets validation state", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("shows Ready in status bar after Clear, even if validation was shown", async () => {
+    vi.useFakeTimers();
+    render(<App />);
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    fireEvent.change(inputArea, { target: { value: validJson } });
+
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+
+    const statusBar = document.querySelector(".status-bar");
+    expect(statusBar?.textContent).toMatch(/✓ Valid/);
+
+    // Use fireEvent (synchronous) to avoid userEvent+advanceTimers deadlock.
+    // handleClear resets validationStatus to "idle" synchronously.
+    const clearBtn = screen.getByRole("button", { name: "Clear" });
+    await act(async () => {
+      fireEvent.click(clearBtn);
+    });
+
+    expect(statusBar?.textContent).toMatch(/Ready/);
+  });
+});
+
+describe("handleSample resets validation state", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("shows Ready in status bar after Sample (resets nodeCount and validationStatus)", async () => {
+    vi.useFakeTimers();
+    render(<App />);
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    fireEvent.change(inputArea, { target: { value: validJson } });
+
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+
+    const statusBar = document.querySelector(".status-bar");
+    expect(statusBar?.textContent).toMatch(/✓ Valid/);
+
+    // Use fireEvent (synchronous) to avoid userEvent+advanceTimers deadlock.
+    // handleSample resets validationStatus to "idle" synchronously.
+    const sampleBtn = screen.getByRole("button", { name: "Sample" });
+    await act(async () => {
+      fireEvent.click(sampleBtn);
+    });
+
+    // After clicking Sample, validationStatus resets to idle → "Ready" shown
+    expect(statusBar?.textContent).toMatch(/Ready/);
   });
 });
