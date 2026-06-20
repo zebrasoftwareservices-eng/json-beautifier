@@ -26,6 +26,7 @@ export interface CodeEditorError {
 interface CodeEditorProps {
   value: string;
   onChange?: (value: string) => void;
+  onPaste?: (value: string) => void;
   error?: CodeEditorError | null;
   readOnly?: boolean;
   placeholder?: string;
@@ -34,6 +35,7 @@ interface CodeEditorProps {
 export function CodeEditor({
   value,
   onChange,
+  onPaste,
   error,
   readOnly = false,
   placeholder,
@@ -41,8 +43,11 @@ export function CodeEditor({
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
+  const onPasteRef = useRef(onPaste);
+  const justPastedRef = useRef(false);
   useEffect(() => {
     onChangeRef.current = onChange;
+    onPasteRef.current = onPaste;
   });
 
   // Create editor on mount
@@ -65,8 +70,18 @@ export function CodeEditor({
       keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap]),
       EditorView.updateListener.of((update) => {
         if (update.docChanged && onChangeRef.current) {
-          onChangeRef.current(update.state.doc.toString());
+          const newValue = update.state.doc.toString();
+          onChangeRef.current(newValue);
+          if (justPastedRef.current) {
+            justPastedRef.current = false;
+            onPasteRef.current?.(newValue);
+          }
         }
+      }),
+      EditorView.domEventHandlers({
+        paste() {
+          justPastedRef.current = true;
+        },
       }),
       EditorView.theme({
         "&": { height: "100%", fontSize: "13px" },
