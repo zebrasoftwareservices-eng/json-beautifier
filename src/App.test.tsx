@@ -538,9 +538,6 @@ describe("handleClear resets validation state", () => {
 
   it("shows Ready in status bar after Clear, even if validation was shown", async () => {
     vi.useFakeTimers();
-    const user = userEvent.setup({
-      advanceTimers: vi.advanceTimersByTime.bind(vi),
-    });
     render(<App />);
 
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
@@ -553,9 +550,11 @@ describe("handleClear resets validation state", () => {
     const statusBar = document.querySelector(".status-bar");
     expect(statusBar?.textContent).toMatch(/✓ Valid/);
 
+    // Use fireEvent (synchronous) to avoid userEvent+advanceTimers deadlock.
+    // handleClear resets validationStatus to "idle" synchronously.
     const clearBtn = screen.getByRole("button", { name: "Clear" });
     await act(async () => {
-      await user.click(clearBtn);
+      fireEvent.click(clearBtn);
     });
 
     expect(statusBar?.textContent).toMatch(/Ready/);
@@ -569,9 +568,6 @@ describe("handleSample resets validation state", () => {
 
   it("shows Ready in status bar after Sample (resets nodeCount and validationStatus)", async () => {
     vi.useFakeTimers();
-    const user = userEvent.setup({
-      advanceTimers: vi.advanceTimersByTime.bind(vi),
-    });
     render(<App />);
 
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
@@ -584,9 +580,11 @@ describe("handleSample resets validation state", () => {
     const statusBar = document.querySelector(".status-bar");
     expect(statusBar?.textContent).toMatch(/✓ Valid/);
 
+    // Use fireEvent (synchronous) to avoid userEvent+advanceTimers deadlock.
+    // handleSample resets validationStatus to "idle" synchronously.
     const sampleBtn = screen.getByRole("button", { name: "Sample" });
     await act(async () => {
-      await user.click(sampleBtn);
+      fireEvent.click(sampleBtn);
     });
 
     // After clicking Sample, validationStatus resets to idle → "Ready" shown

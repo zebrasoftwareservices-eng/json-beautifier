@@ -50,11 +50,13 @@ export default function App() {
           });
           setOutput("");
           setParseTimeMs(null);
+          setValidationStatus("invalid");
         }
       } catch {
         setError({ message: "Formatting failed — please try again." });
         setOutput("");
         setParseTimeMs(null);
+        setValidationStatus("invalid");
       } finally {
         formatInFlightRef.current = false;
         setProcessing(false);
@@ -81,11 +83,13 @@ export default function App() {
         });
         setOutput("");
         setParseTimeMs(null);
+        setValidationStatus("invalid");
       }
     } catch {
       setError({ message: "Minify failed — please try again." });
       setOutput("");
       setParseTimeMs(null);
+      setValidationStatus("invalid");
     } finally {
       setProcessing(false);
     }
