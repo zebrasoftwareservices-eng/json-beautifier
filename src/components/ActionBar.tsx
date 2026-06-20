@@ -20,6 +20,8 @@ interface ActionBarProps {
   onSample: () => void;
   processing: boolean;
   copyLabel?: string;
+  autoFormat?: boolean;
+  onAutoFormatChange?: (v: boolean) => void;
 }
 
 export function ActionBar({
@@ -33,6 +35,8 @@ export function ActionBar({
   onSample,
   processing,
   copyLabel = "Copy",
+  autoFormat = true,
+  onAutoFormatChange,
 }: ActionBarProps) {
   return (
     <div className="action-bar">
@@ -85,6 +89,15 @@ export function ActionBar({
         <button onClick={onMinify} disabled={processing}>
           Minify
         </button>
+        <label className="auto-format-label" title="Auto-format on paste">
+          <input
+            type="checkbox"
+            checked={autoFormat}
+            onChange={(e) => onAutoFormatChange?.(e.target.checked)}
+            disabled={processing}
+          />
+          Auto
+        </label>
         <button className="secondary" disabled title="Validate — coming soon">
           Validate
         </button>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import "./App.css";
 import { useJsonWorker } from "./worker/useJsonWorker";
 import { CodeEditor, type CodeEditorError } from "./components/CodeEditor";
@@ -15,36 +15,44 @@ export default function App() {
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>("tree");
   const [copyLabel, setCopyLabel] = useState("Copy");
+  const [autoFormat, setAutoFormat] = useState(true);
+  const [fileName, setFileName] = useState<string | null>(null);
 
   const { process } = useJsonWorker();
+  const autoFormatTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  async function handleFormat() {
-    if (!input.trim()) return;
-    setProcessing(true);
-    try {
-      const result = await process("beautify", input, indent);
-      if (result.ok) {
-        setOutput(result.result);
-        setParseTimeMs(result.parseTimeMs);
-        setError(null);
-        setActiveTab("code");
-      } else {
-        setError({
-          message: result.message,
-          line: result.line,
-          column: result.column,
-        });
+  // Accepts optional content to format (avoids stale closure on state)
+  const handleFormat = useCallback(
+    async (content?: string) => {
+      const toFormat = content ?? input;
+      if (!toFormat.trim()) return;
+      setProcessing(true);
+      try {
+        const result = await process("beautify", toFormat, indent);
+        if (result.ok) {
+          setOutput(result.result);
+          setParseTimeMs(result.parseTimeMs);
+          setError(null);
+          setActiveTab("code");
+        } else {
+          setError({
+            message: result.message,
+            line: result.line,
+            column: result.column,
+          });
+          setOutput("");
+          setParseTimeMs(null);
+        }
+      } catch {
+        setError({ message: "Formatting failed — please try again." });
         setOutput("");
         setParseTimeMs(null);
+      } finally {
+        setProcessing(false);
       }
-    } catch {
-      setError({ message: "Formatting failed — please try again." });
-      setOutput("");
-      setParseTimeMs(null);
-    } finally {
-      setProcessing(false);
-    }
-  }
+    },
+    [input, indent, process],
+  );
 
   async function handleMinify() {
     if (!input.trim()) return;
@@ -80,6 +88,7 @@ export default function App() {
     setError(null);
     setParseTimeMs(null);
     setCopyLabel("Copy");
+    setFileName(null);
   }
 
   async function handleCopy() {
@@ -117,7 +126,39 @@ export default function App() {
     setOutput("");
     setError(null);
     setParseTimeMs(null);
+    setFileName(null);
   }
+
+  // Called by CodeEditor when user pastes directly into the editor
+  const handleEditorPaste = useCallback(
+    (pastedValue: string) => {
+      if (!autoFormat || !pastedValue.trim()) return;
+      if (autoFormatTimerRef.current) clearTimeout(autoFormatTimerRef.current);
+      autoFormatTimerRef.current = setTimeout(() => {
+        handleFormat(pastedValue);
+      }, 300);
+    },
+    [autoFormat, handleFormat],
+  );
+
+  // Keyboard shortcut: Cmd/Ctrl+Shift+F → Format
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "F") {
+        e.preventDefault();
+        handleFormat();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [handleFormat]);
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoFormatTimerRef.current) clearTimeout(autoFormatTimerRef.current);
+    };
+  }, []);
 
   const errorLabel = error
     ? error.line != null
@@ -129,12 +170,13 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <h1>JSON Beautifier</h1>
+        {fileName && <span className="file-name">{fileName}</span>}
       </header>
 
       <ActionBar
         indent={indent}
         onIndentChange={setIndent}
-        onFormat={handleFormat}
+        onFormat={() => handleFormat()}
         onMinify={handleMinify}
         onClear={handleClear}
         onCopy={handleCopy}
@@ -142,6 +184,8 @@ export default function App() {
         onSample={handleSample}
         processing={processing}
         copyLabel={copyLabel}
+        autoFormat={autoFormat}
+        onAutoFormatChange={setAutoFormat}
       />
 
       {errorLabel && <div className="error-banner">{errorLabel}</div>}
@@ -152,6 +196,7 @@ export default function App() {
             <CodeEditor
               value={input}
               onChange={setInput}
+              onPaste={handleEditorPaste}
               error={error}
               placeholder={'Paste or type JSON here…\n\n{"key": "value"}'}
             />
@@ -170,7 +215,7 @@ export default function App() {
         {parseTimeMs !== null ? (
           <span>Parsed in {parseTimeMs} ms</span>
         ) : (
-          <span>Ready</span>
+          <span>Ready — ⌘⇧F to format</span>
         )}
       </div>
     </div>
