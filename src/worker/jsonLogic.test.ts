@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { processJson, MAX_INPUT_BYTES } from "./jsonLogic";
+import { processJson, countNodes, MAX_INPUT_BYTES } from "./jsonLogic";
 
 const validJson = '{"name":"Alice","age":30}';
 
@@ -144,6 +144,113 @@ describe("processJson — indent clamping", () => {
     expect(res.ok).toBe(true);
     if (res.ok) {
       expect(res.result).toContain("\n");
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// JSO-12: countNodes
+// ---------------------------------------------------------------------------
+
+describe("countNodes", () => {
+  it("counts null as 1", () => {
+    expect(countNodes(null)).toBe(1);
+  });
+
+  it("counts a string as 1", () => {
+    expect(countNodes("hello")).toBe(1);
+  });
+
+  it("counts a number as 1", () => {
+    expect(countNodes(42)).toBe(1);
+  });
+
+  it("counts a boolean as 1", () => {
+    expect(countNodes(true)).toBe(1);
+  });
+
+  it("counts an empty object {} as 1", () => {
+    expect(countNodes({})).toBe(1);
+  });
+
+  it("counts { a: 1 } as 2", () => {
+    expect(countNodes({ a: 1 })).toBe(2);
+  });
+
+  it("counts { a: 1, b: 2 } as 3", () => {
+    expect(countNodes({ a: 1, b: 2 })).toBe(3);
+  });
+
+  it("counts an empty array [] as 1", () => {
+    expect(countNodes([])).toBe(1);
+  });
+
+  it("counts [1, 2, 3] as 4", () => {
+    expect(countNodes([1, 2, 3])).toBe(4);
+  });
+
+  it("counts nested { a: { b: 1 } } as 3", () => {
+    expect(countNodes({ a: { b: 1 } })).toBe(3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// JSO-12: processJson — validate
+// ---------------------------------------------------------------------------
+
+describe("processJson — validate", () => {
+  it("returns ok: true with empty result and correct nodeCount for valid JSON", () => {
+    const input = '{"name":"Alice","age":30}';
+    const res = processJson("validate", input);
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.result).toBe("");
+      expect(res.nodeCount).toBe(countNodes({ name: "Alice", age: 30 }));
+    }
+  });
+
+  it("nodeCount matches countNodes output for array input", () => {
+    const input = "[1, 2, 3]";
+    const res = processJson("validate", input);
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.nodeCount).toBe(4); // 1 array + 3 elements
+    }
+  });
+
+  it("returns ok: false with message for invalid JSON", () => {
+    const res = processJson("validate", "not valid json");
+    expect(res.ok).toBe(false);
+    if (!res.ok) {
+      expect(res.message).toBeTruthy();
+    }
+  });
+
+  it("returns line and/or column for invalid JSON (same as beautify)", () => {
+    const res = processJson("validate", "{bad}");
+    expect(res.ok).toBe(false);
+    if (!res.ok) {
+      const hasPosition =
+        typeof res.line === "number" || typeof res.column === "number";
+      expect(hasPosition).toBe(true);
+    }
+  });
+
+  it("returns ok: false when input exceeds 1 MB", () => {
+    const huge = "x".repeat(MAX_INPUT_BYTES + 1);
+    const res = processJson("validate", huge);
+    expect(res.ok).toBe(false);
+    if (!res.ok) {
+      expect(res.message).toMatch(/1 MB/i);
+    }
+  });
+
+  it("returns parseTimeMs >= 0 on success", () => {
+    const res = processJson("validate", '{"ok":true}');
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(typeof res.parseTimeMs).toBe("number");
+      expect(res.parseTimeMs).toBeGreaterThanOrEqual(0);
     }
   });
 });
