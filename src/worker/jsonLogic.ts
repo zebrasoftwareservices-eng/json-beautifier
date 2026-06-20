@@ -1,4 +1,4 @@
-export const MAX_INPUT_BYTES = 1_000_000; // 1 MB
+export const MAX_INPUT_BYTES = 25_000_000; // 25 MB (matches file upload limit)
 
 const BLOCKED_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 
@@ -61,7 +61,7 @@ export function processJson(
   if (inputBytes > MAX_INPUT_BYTES) {
     return {
       ok: false,
-      message: `Input exceeds 1 MB limit (${(inputBytes / 1_000_000).toFixed(1)} MB). Large file support is coming soon.`,
+      message: `Input exceeds 25 MB limit (${(inputBytes / 1_000_000).toFixed(1)} MB).`,
     };
   }
 

@@ -1,4 +1,10 @@
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  act,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, afterEach } from "vitest";
 import App from "./App";
@@ -589,5 +595,405 @@ describe("handleSample resets validation state", () => {
 
     // After clicking Sample, validationStatus resets to idle → "Ready" shown
     expect(statusBar?.textContent).toMatch(/Ready/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// JSO-10: FileReader mock helper
+// ---------------------------------------------------------------------------
+function mockFileReader(text: string, error = false) {
+  const mockReader = {
+    readAsText: vi.fn(() => {
+      setTimeout(() => {
+        if (error) {
+          mockReader.onerror?.();
+        } else {
+          mockReader.result = text;
+          mockReader.onload?.();
+        }
+      }, 0);
+    }),
+    onload: null as (() => void) | null,
+    onerror: null as (() => void) | null,
+    onprogress: null as ((e: ProgressEvent) => void) | null,
+    result: null as string | null,
+  };
+  // Vitest 4.x requires the stubbed global constructor to be a real function/class
+  function MockFileReader() {
+    return mockReader;
+  }
+  vi.stubGlobal("FileReader", MockFileReader);
+  return mockReader;
+}
+
+function makeFile(
+  name: string,
+  content: string,
+  type = "application/json",
+): File {
+  return new File([content], name, { type });
+}
+
+// ---------------------------------------------------------------------------
+// Upload button / file picker
+// ---------------------------------------------------------------------------
+describe("Upload button / file picker", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("hidden file input exists with correct accept attribute", () => {
+    render(<App />);
+    const fileInput = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    expect(fileInput).toBeInTheDocument();
+    expect(fileInput.accept).toBe(".json,.txt,.jsonl");
+    expect(fileInput).not.toBeVisible();
+  });
+
+  it("clicking Upload button triggers the hidden file input click", async () => {
+    render(<App />);
+    const fileInput = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const clickSpy = vi.spyOn(fileInput, "click");
+
+    const uploadBtn = screen.getByRole("button", { name: "Upload" });
+    await userEvent.setup().click(uploadBtn);
+
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("selecting a .json file loads content into input and shows file name in header", async () => {
+    mockFileReader('{"hello":"world"}');
+    render(<App />);
+
+    const fileInput = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const file = makeFile("data.json", '{"hello":"world"}');
+
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    await waitFor(() =>
+      expect(screen.getByText("data.json")).toBeInTheDocument(),
+    );
+    expect(inputArea.value).toBe('{"hello":"world"}');
+  });
+
+  it("selecting a .txt file is accepted without error", async () => {
+    mockFileReader("plain text content");
+    render(<App />);
+
+    const fileInput = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const file = makeFile("notes.txt", "plain text content", "text/plain");
+
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() =>
+      expect(screen.getByText("notes.txt")).toBeInTheDocument(),
+    );
+    expect(document.querySelector(".error-banner")).not.toBeInTheDocument();
+  });
+
+  it("selecting a .jsonl file is accepted without error", async () => {
+    mockFileReader('{"a":1}\n{"b":2}');
+    render(<App />);
+
+    const fileInput = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const file = makeFile(
+      "lines.jsonl",
+      '{"a":1}\n{"b":2}',
+      "application/jsonl",
+    );
+
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() =>
+      expect(screen.getByText("lines.jsonl")).toBeInTheDocument(),
+    );
+    expect(document.querySelector(".error-banner")).not.toBeInTheDocument();
+  });
+
+  it("selecting an unsupported extension shows error, does not change input", async () => {
+    render(<App />);
+
+    const fileInput = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const file = makeFile(
+      "evil.exe",
+      "binary content",
+      "application/octet-stream",
+    );
+
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    });
+
+    const banner = document.querySelector(".error-banner");
+    expect(banner).toBeInTheDocument();
+    expect(banner?.textContent).toMatch(/unsupported file type/i);
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    expect(inputArea.value).toBe("");
+  });
+
+  it("file exceeding 25 MB shows 'exceeds 25 MB limit' error", async () => {
+    render(<App />);
+
+    const fileInput = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    // Create a File whose .size property reports > 25 MB by overriding size
+    const bigFile = Object.defineProperty(makeFile("huge.json", "x"), "size", {
+      value: 25_000_001,
+      configurable: true,
+    }) as File;
+
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [bigFile] } });
+    });
+
+    const banner = document.querySelector(".error-banner");
+    expect(banner).toBeInTheDocument();
+    expect(banner?.textContent).toMatch(/exceeds 25 MB limit/i);
+  });
+
+  it("FileReader error shows failure banner", async () => {
+    mockFileReader("", true /* error */);
+    render(<App />);
+
+    const fileInput = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const file = makeFile("broken.json", "");
+
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() =>
+      expect(document.querySelector(".error-banner")).toBeInTheDocument(),
+    );
+    expect(document.querySelector(".error-banner")?.textContent).toMatch(
+      /failed to read/i,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Drag-and-drop
+// ---------------------------------------------------------------------------
+describe("Drag-and-drop", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function getDropZone() {
+    return document.querySelector(".drop-zone") as HTMLElement;
+  }
+
+  it("dropping a .json file loads content and shows file name", async () => {
+    mockFileReader('{"dropped":true}');
+    render(<App />);
+
+    const dropZone = getDropZone();
+    const file = makeFile("dropped.json", '{"dropped":true}');
+
+    fireEvent.drop(dropZone, {
+      dataTransfer: { files: [file] },
+    });
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    await waitFor(() =>
+      expect(screen.getByText("dropped.json")).toBeInTheDocument(),
+    );
+    expect(inputArea.value).toBe('{"dropped":true}');
+  });
+
+  it("dropping an unsupported file type shows error, does not change input", async () => {
+    render(<App />);
+
+    const dropZone = getDropZone();
+    const file = makeFile("virus.exe", "binary", "application/octet-stream");
+
+    await act(async () => {
+      fireEvent.drop(dropZone, {
+        dataTransfer: { files: [file] },
+      });
+    });
+
+    const banner = document.querySelector(".error-banner");
+    expect(banner).toBeInTheDocument();
+    expect(banner?.textContent).toMatch(/unsupported file type/i);
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    expect(inputArea.value).toBe("");
+  });
+
+  it("dragOver adds drop-zone--active class to the wrapper div", () => {
+    render(<App />);
+    const dropZone = getDropZone();
+
+    fireEvent.dragOver(dropZone, { dataTransfer: { dropEffect: "" } });
+
+    expect(dropZone.classList.contains("drop-zone--active")).toBe(true);
+  });
+
+  it("dragLeave to outside removes drop-zone--active class", () => {
+    render(<App />);
+    const dropZone = getDropZone();
+
+    fireEvent.dragOver(dropZone, { dataTransfer: { dropEffect: "" } });
+    expect(dropZone.classList.contains("drop-zone--active")).toBe(true);
+
+    // relatedTarget null simulates leaving to outside the document
+    fireEvent.dragLeave(dropZone, { relatedTarget: null });
+
+    expect(dropZone.classList.contains("drop-zone--active")).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// File size + progress
+// ---------------------------------------------------------------------------
+describe("File size and progress indicator", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("file ≤ 5 MB shows no progress bar", async () => {
+    mockFileReader('{"small":true}');
+    render(<App />);
+
+    const fileInput = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    // default File size is tiny — well under 5 MB
+    const file = makeFile("small.json", '{"small":true}');
+
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() =>
+      expect(screen.queryByRole("progressbar")).not.toBeInTheDocument(),
+    );
+  });
+
+  it("file > 5 MB shows progress bar while reading then removes it after load", async () => {
+    let capturedOnProgress: ((e: ProgressEvent) => void) | null = null;
+    let capturedOnLoad: (() => void) | null = null;
+
+    const mockReader = {
+      readAsText: vi.fn(() => {
+        // Don't auto-resolve — let the test drive progress events manually
+        // capture happens after readAsText call since callbacks are assigned before
+        capturedOnProgress = mockReader.onprogress;
+        capturedOnLoad = mockReader.onload;
+      }),
+      onload: null as (() => void) | null,
+      onerror: null as (() => void) | null,
+      onprogress: null as ((e: ProgressEvent) => void) | null,
+      result: '{"large":true}' as string | null,
+    };
+    function MockFileReader() {
+      return mockReader;
+    }
+    vi.stubGlobal("FileReader", MockFileReader);
+
+    render(<App />);
+
+    const fileInput = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+
+    // Create a file whose size > 5 MB
+    const largeFile = Object.defineProperty(
+      makeFile("large.json", "x"),
+      "size",
+      { value: 6_000_000, configurable: true },
+    ) as File;
+
+    act(() => {
+      fireEvent.change(fileInput, { target: { files: [largeFile] } });
+    });
+
+    // After triggering the change, the FileReader mock sets up callbacks.
+    // We need to capture them: re-read from mock.
+    capturedOnProgress = mockReader.onprogress;
+    capturedOnLoad = mockReader.onload;
+
+    // Emit a progress event — progress bar should appear
+    await act(async () => {
+      capturedOnProgress?.({
+        lengthComputable: true,
+        loaded: 3_000_000,
+        total: 6_000_000,
+      } as ProgressEvent);
+    });
+
+    expect(document.querySelector('[role="progressbar"]')).toBeInTheDocument();
+
+    // Resolve the read — progress bar should disappear
+    await act(async () => {
+      capturedOnLoad?.();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    expect(
+      document.querySelector('[role="progressbar"]'),
+    ).not.toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// File name in header
+// ---------------------------------------------------------------------------
+describe("File name in header", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("shows file name in header after successful upload", async () => {
+    mockFileReader('{"x":1}');
+    render(<App />);
+
+    const fileInput = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const file = makeFile("mydata.json", '{"x":1}');
+
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() =>
+      expect(document.querySelector("span.file-name")?.textContent).toBe(
+        "mydata.json",
+      ),
+    );
+  });
+
+  it("removes file name from header after Clear", async () => {
+    mockFileReader('{"x":1}');
+    const user = userEvent.setup();
+    render(<App />);
+
+    const fileInput = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const file = makeFile("temp.json", '{"x":1}');
+
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() =>
+      expect(document.querySelector("span.file-name")).toBeInTheDocument(),
+    );
+
+    await user.click(screen.getByRole("button", { name: "Clear" }));
+
+    expect(document.querySelector("span.file-name")).not.toBeInTheDocument();
   });
 });
