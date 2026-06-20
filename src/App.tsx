@@ -6,6 +6,28 @@ import { SplitPane } from "./components/SplitPane";
 import { ActionBar, SAMPLE_JSON } from "./components/ActionBar";
 import { RightPane, type TabId } from "./components/RightPane";
 
+const INSTANT_LIMIT = 5 * 1_000_000; // 5 MB — read without progress indicator
+const MAX_FILE_BYTES = 25 * 1_000_000; // 25 MB — hard limit
+const ALLOWED_EXTENSIONS = new Set([".json", ".jsonl", ".txt"]);
+
+function readFileAsText(
+  file: File,
+  onProgress?: (pct: number) => void,
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    if (onProgress) {
+      reader.onprogress = (e) => {
+        if (e.lengthComputable)
+          onProgress(Math.round((e.loaded / e.total) * 100));
+      };
+    }
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("File read failed"));
+    reader.readAsText(file);
+  });
+}
+
 export default function App() {
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
@@ -21,7 +43,10 @@ export default function App() {
   const [validationStatus, setValidationStatus] = useState<
     "idle" | "valid" | "invalid"
   >("idle");
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { process } = useJsonWorker();
   const autoFormatTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const validateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -64,6 +89,73 @@ export default function App() {
     },
     [input, indent, process],
   );
+
+  async function handleFileLoad(file: File) {
+    const ext = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
+    if (!ALLOWED_EXTENSIONS.has(ext)) {
+      setError({
+        message: `Unsupported file type "${ext || "(none)"}". Please upload a .json, .jsonl, or .txt file.`,
+      });
+      return;
+    }
+
+    if (file.size > MAX_FILE_BYTES) {
+      setError({
+        message: `File "${file.name}" is ${(file.size / 1_000_000).toFixed(1)} MB — exceeds 25 MB limit. Pro plan supports up to 100 MB.`,
+      });
+      return;
+    }
+
+    const needsProgress = file.size > INSTANT_LIMIT;
+    if (needsProgress) setUploadProgress(0);
+    setError(null);
+
+    try {
+      const text = await readFileAsText(
+        file,
+        needsProgress ? setUploadProgress : undefined,
+      );
+      setInput(text);
+      setOutput("");
+      setParseTimeMs(null);
+      setFileName(file.name);
+    } catch {
+      setError({
+        message: `Failed to read "${file.name}" — please try again.`,
+      });
+    } finally {
+      if (needsProgress) setUploadProgress(null);
+    }
+  }
+
+  function handleUploadClick() {
+    fileInputRef.current?.click();
+  }
+
+  function handleFileInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) void handleFileLoad(file);
+    e.target.value = "";
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    setIsDragging(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragging(false);
+    }
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) void handleFileLoad(file);
+  }
 
   async function handleMinify() {
     if (!input.trim()) return;
@@ -125,7 +217,7 @@ export default function App() {
       const bytes = new TextEncoder().encode(text).length;
       if (bytes > 1_000_000) {
         setError({
-          message: `Pasted content is ${(bytes / 1_000_000).toFixed(1)} MB — exceeds 1 MB limit. Large file support is coming soon.`,
+          message: `Pasted content is ${(bytes / 1_000_000).toFixed(1)} MB — exceeds 1 MB limit. Use the Upload button for large files.`,
         });
         return;
       }
@@ -251,6 +343,15 @@ export default function App() {
         {fileName && <span className="file-name">{fileName}</span>}
       </header>
 
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json,.txt,.jsonl"
+        style={{ display: "none" }}
+        onChange={handleFileInputChange}
+        aria-hidden="true"
+      />
+
       <ActionBar
         indent={indent}
         onIndentChange={setIndent}
@@ -260,6 +361,7 @@ export default function App() {
         onCopy={handleCopy}
         onPaste={handlePaste}
         onSample={handleSample}
+        onUpload={handleUploadClick}
         processing={processing}
         copyLabel={copyLabel}
         autoFormat={autoFormat}
@@ -271,13 +373,40 @@ export default function App() {
       <div className="editor-area">
         <SplitPane
           left={
-            <CodeEditor
-              value={input}
-              onChange={setInput}
-              onPaste={handleEditorPaste}
-              error={error}
-              placeholder={'Paste or type JSON here…\n\n{"key": "value"}'}
-            />
+            <div
+              className={`drop-zone${isDragging ? " drop-zone--active" : ""}`}
+              onDragOver={handleDragOver}
+              onDragEnter={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <CodeEditor
+                value={input}
+                onChange={setInput}
+                onPaste={handleEditorPaste}
+                error={error}
+                placeholder={'Paste or type JSON here…\n\n{"key": "value"}'}
+              />
+              {isDragging && (
+                <div className="drop-overlay" aria-hidden="true">
+                  <span>Drop JSON file to load</span>
+                </div>
+              )}
+              {uploadProgress !== null && (
+                <div
+                  className="upload-progress"
+                  role="progressbar"
+                  aria-valuenow={uploadProgress}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                >
+                  <div
+                    className="upload-progress__bar"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              )}
+            </div>
           }
           right={
             <RightPane

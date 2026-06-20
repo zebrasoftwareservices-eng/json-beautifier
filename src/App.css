@@ -179,6 +179,71 @@ button.primary-btn {
   outline: none;
 }
 
+/* ── App header extras ── */
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.file-name {
+  font-size: 11px;
+  color: var(--text);
+  opacity: 0.6;
+  font-family: var(--mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 300px;
+}
+
+/* ── Drop zone ── */
+.drop-zone {
+  position: relative;
+  height: 100%;
+}
+
+.drop-zone--active .code-editor {
+  opacity: 0.4;
+}
+
+.drop-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(99, 102, 241, 0.08);
+  border: 2px dashed #6366f1;
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.drop-overlay span {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6366f1;
+  letter-spacing: 0.01em;
+}
+
+/* ── Upload progress bar ── */
+.upload-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(99, 102, 241, 0.2);
+  z-index: 20;
+}
+
+.upload-progress__bar {
+  height: 100%;
+  background: #6366f1;
+  transition: width 0.1s linear;
+}
+
 /* ── CodeMirror editor wrapper ── */
 .code-editor {
   height: 100%;

@@ -18,6 +18,7 @@ interface ActionBarProps {
   onCopy: () => void;
   onPaste: () => void;
   onSample: () => void;
+  onUpload: () => void;
   processing: boolean;
   copyLabel?: string;
   autoFormat?: boolean;
@@ -33,6 +34,7 @@ export function ActionBar({
   onCopy,
   onPaste,
   onSample,
+  onUpload,
   processing,
   copyLabel = "Copy",
   autoFormat = true,
@@ -50,8 +52,9 @@ export function ActionBar({
         </button>
         <button
           className="secondary"
-          disabled
-          title="Upload file — coming soon"
+          onClick={onUpload}
+          disabled={processing}
+          title="Upload .json, .txt, or .jsonl file"
         >
           Upload
         </button>
