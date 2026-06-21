@@ -16,6 +16,7 @@ interface ActionBarProps {
   onMinify: () => void;
   onClear: () => void;
   onCopy: () => void;
+  onDownload: () => void;
   onPaste: () => void;
   onSample: () => void;
   onUpload: () => void;
@@ -35,6 +36,7 @@ export function ActionBar({
   onMinify,
   onClear,
   onCopy,
+  onDownload,
   onPaste,
   onSample,
   onUpload,
@@ -129,7 +131,12 @@ export function ActionBar({
         <button onClick={onCopy} disabled={processing}>
           {copyLabel}
         </button>
-        <button className="secondary" disabled title="Download — coming soon">
+        <button
+          className="secondary"
+          onClick={onDownload}
+          disabled={processing}
+          title="Download formatted JSON as a file"
+        >
           Download
         </button>
         <button className="secondary" disabled title="Share — coming soon">

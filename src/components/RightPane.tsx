@@ -1,5 +1,6 @@
 import { CodeEditor, type CodeEditorError } from "./CodeEditor";
 import { TreeView } from "./TreeView";
+import { TableView } from "./TableView";
 
 export type TabId =
   | "tree"
@@ -214,6 +215,8 @@ export function RightPane({
                 repairResult={repairResult}
                 onAcceptRepair={onAcceptRepair}
               />
+            ) : tab.id === "table" ? (
+              <TableView json={output} />
             ) : (
               <Placeholder label={tab.label} />
             )}
