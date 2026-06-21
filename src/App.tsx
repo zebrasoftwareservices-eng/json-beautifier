@@ -361,6 +361,12 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [handleFormat, handleValidate]);
 
+  // Clear stale repair result whenever the editor content changes
+  useEffect(() => {
+    const id = setTimeout(() => setRepairResult(null), 0);
+    return () => clearTimeout(id);
+  }, [input]);
+
   // Cleanup debounce timers on unmount
   useEffect(() => {
     return () => {

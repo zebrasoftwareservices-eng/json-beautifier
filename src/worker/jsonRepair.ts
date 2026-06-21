@@ -5,12 +5,12 @@ export type RepairResult =
 function removeComments(input: string): string {
   let result = "";
   let i = 0;
-  let inString = false;
+  let quote: '"' | "'" | null = null;
 
   while (i < input.length) {
-    if (!inString) {
-      if (input[i] === '"') {
-        inString = true;
+    if (!quote) {
+      if (input[i] === '"' || input[i] === "'") {
+        quote = input[i] as '"' | "'";
         result += input[i++];
       } else if (input[i] === "/" && input[i + 1] === "/") {
         while (i < input.length && input[i] !== "\n") i++;
@@ -29,8 +29,8 @@ function removeComments(input: string): string {
       if (input[i] === "\\" && i + 1 < input.length) {
         result += input[i] + input[i + 1];
         i += 2;
-      } else if (input[i] === '"') {
-        inString = false;
+      } else if (input[i] === quote) {
+        quote = null;
         result += input[i++];
       } else {
         result += input[i++];

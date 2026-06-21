@@ -122,12 +122,14 @@ function RepairPanel({
     <div className="repair-panel repair-panel--success">
       <div className="repair-panel__header">
         <p className="repair-panel__heading">Repaired preview</p>
-        <button
-          className="repair-panel__accept-btn"
-          onClick={() => onAcceptRepair?.(repairResult.result)}
-        >
-          Accept repair
-        </button>
+        {onAcceptRepair && (
+          <button
+            className="repair-panel__accept-btn"
+            onClick={() => onAcceptRepair(repairResult.result)}
+          >
+            Accept repair
+          </button>
+        )}
       </div>
       <ul className="repair-panel__fixes">
         {repairResult.fixes.map((fix, i) => (
