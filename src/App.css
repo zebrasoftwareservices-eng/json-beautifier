@@ -393,15 +393,15 @@ button.primary-btn {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #0d9488;
+  color: var(--success);
 }
 
 .repair-panel__heading--fail {
-  color: #ef4444;
+  color: var(--error);
 }
 
 .repair-panel__accept-btn {
-  background: #0d9488;
+  background: var(--success);
   color: #fff;
   font-size: 12px;
   font-weight: 600;
@@ -422,7 +422,7 @@ button.primary-btn {
 
 .repair-panel__fix-item {
   font-size: 12px;
-  color: #0d9488;
+  color: var(--success);
   line-height: 1.6;
 }
 

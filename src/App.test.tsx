@@ -767,6 +767,28 @@ describe("Repair button click behavior", () => {
     });
     expect(screen.getByTestId("repair-empty")).toBeInTheDocument();
   });
+
+  it("editing input after a successful repair clears the repair result", async () => {
+    vi.useFakeTimers();
+    render(<App />);
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    fireEvent.change(inputArea, { target: { value: '{"a":1,}' } });
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+    const repairBtn = screen.getByRole("button", { name: /repair/i });
+    await act(async () => {
+      fireEvent.click(repairBtn);
+    });
+    expect(screen.getByTestId("repair-success")).toBeInTheDocument();
+
+    // Now edit the input — stale repair should be cleared
+    await act(async () => {
+      fireEvent.change(inputArea, { target: { value: '{"b":2,}' } });
+      vi.advanceTimersByTime(10);
+    });
+    expect(screen.getByTestId("repair-empty")).toBeInTheDocument();
+  });
 });
 
 // ---------------------------------------------------------------------------

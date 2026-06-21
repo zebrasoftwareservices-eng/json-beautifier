@@ -119,6 +119,16 @@ describe("repairJson — JS comments", () => {
       expect(result.message).toMatch(/already valid/i);
     }
   });
+
+  it("does not strip // inside single-quoted string values", () => {
+    // Regression: removeComments was treating // inside 'https://...' as a comment
+    const input = "{'url':'https://example.com'}";
+    const result = repairJson(input);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(JSON.parse(result.result)).toEqual({ url: "https://example.com" });
+    }
+  });
 });
 
 describe("repairJson — single-quoted strings", () => {
