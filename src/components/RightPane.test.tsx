@@ -110,11 +110,111 @@ describe("RightPane — tab list", () => {
     expect(onTabChange).toHaveBeenCalledWith("error");
   });
 
-  it("renders all expected tabs: Tree, Code, Error, Table, Diff, Schema", () => {
+  it("renders all expected tabs: Tree, Code, Error, Repair, Table, Diff, Schema", () => {
     renderRightPane({ activeTab: "tree" });
-    const tabNames = ["Tree", "Code", "Error", "Table", "Diff", "Schema"];
+    const tabNames = [
+      "Tree",
+      "Code",
+      "Error",
+      "Repair",
+      "Table",
+      "Diff",
+      "Schema",
+    ];
     for (const name of tabNames) {
       expect(screen.getByRole("tab", { name })).toBeInTheDocument();
     }
+  });
+});
+
+describe("RightPane — RepairPanel", () => {
+  it("shows 'Click Repair' hint when repairResult is null", () => {
+    renderRightPane({ activeTab: "repair", repairResult: null });
+    expect(
+      screen.getByText(/Click Repair when JSON is invalid/i),
+    ).toBeInTheDocument();
+  });
+
+  it("shows 'Click Repair' hint when repairResult is undefined", () => {
+    renderRightPane({ activeTab: "repair", repairResult: undefined });
+    expect(
+      screen.getByText(/Click Repair when JSON is invalid/i),
+    ).toBeInTheDocument();
+  });
+
+  it("shows 'Could not auto-repair' heading when repairResult.ok is false", () => {
+    renderRightPane({
+      activeTab: "repair",
+      repairResult: { ok: false, message: "Structure is too broken." },
+    });
+    expect(screen.getByText("Could not auto-repair")).toBeInTheDocument();
+  });
+
+  it("shows the failure message when repairResult.ok is false", () => {
+    renderRightPane({
+      activeTab: "repair",
+      repairResult: { ok: false, message: "Structure is too broken." },
+    });
+    expect(screen.getByText("Structure is too broken.")).toBeInTheDocument();
+  });
+
+  it("shows manual hints list when repair fails", () => {
+    renderRightPane({
+      activeTab: "repair",
+      repairResult: { ok: false, message: "Still invalid." },
+    });
+    expect(
+      screen.getByText(/Check for unclosed strings or brackets/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Remove custom extensions/i)).toBeInTheDocument();
+    expect(screen.getByText(/Paste into a linter/i)).toBeInTheDocument();
+  });
+
+  it("shows 'Repaired preview' heading when repairResult.ok is true", () => {
+    renderRightPane({
+      activeTab: "repair",
+      repairResult: {
+        ok: true,
+        result: '{"a":1}',
+        fixes: ["Removed 1 trailing comma"],
+      },
+    });
+    expect(screen.getByText("Repaired preview")).toBeInTheDocument();
+  });
+
+  it("renders each fix in the fixes list", () => {
+    renderRightPane({
+      activeTab: "repair",
+      repairResult: {
+        ok: true,
+        result: '{"a":1}',
+        fixes: [
+          "Removed 1 trailing comma",
+          "Removed JavaScript-style comments",
+        ],
+      },
+    });
+    expect(screen.getByText(/Removed 1 trailing comma/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Removed JavaScript-style comments/),
+    ).toBeInTheDocument();
+  });
+
+  it("calls onAcceptRepair with repaired text when 'Accept repair' button is clicked", async () => {
+    const onAcceptRepair = vi.fn();
+    const repairedText = '{"a":1}';
+    renderRightPane({
+      activeTab: "repair",
+      repairResult: {
+        ok: true,
+        result: repairedText,
+        fixes: ["Removed 1 trailing comma"],
+      },
+      onAcceptRepair,
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Accept repair" }));
+    expect(onAcceptRepair).toHaveBeenCalledWith(repairedText);
+    expect(onAcceptRepair).toHaveBeenCalledTimes(1);
   });
 });
