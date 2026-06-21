@@ -360,6 +360,21 @@ export default function App() {
     }
   }
 
+  function handleDownload() {
+    if (!output) return;
+    const blob = new Blob([output], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    // Derive filename: strip old extension and use .json
+    a.download = fileName
+      ? fileName.replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9._-]/g, "_") +
+        ".json"
+      : "output.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function handlePaste() {
     try {
       const text = await navigator.clipboard.readText();
@@ -483,14 +498,37 @@ export default function App() {
         : `Invalid JSON: ${error.message}`
       : null;
 
-  const statusText =
-    validationStatus === "valid" && nodeCount !== null && parseTimeMs !== null
-      ? `✓ Valid — ${nodeCount} node${nodeCount === 1 ? "" : "s"}, parsed in ${parseTimeMs} ms`
+  const inputSizeBytes = input.length; // UTF-16 char count; close enough for JSON
+  const sizeLabel =
+    inputSizeBytes > 0
+      ? inputSizeBytes >= 1_000_000
+        ? `${(inputSizeBytes / 1_000_000).toFixed(1)} MB`
+        : inputSizeBytes >= 1_000
+          ? `${(inputSizeBytes / 1_000).toFixed(1)} KB`
+          : `${inputSizeBytes} B`
+      : null;
+
+  const memoryWarning = inputSizeBytes > 10_000_000;
+
+  const statusText = processing
+    ? `Processing… · Web Worker`
+    : validationStatus === "valid" && nodeCount !== null && parseTimeMs !== null
+      ? [
+          "✓ Valid",
+          sizeLabel,
+          `${nodeCount} node${nodeCount === 1 ? "" : "s"}`,
+          `${parseTimeMs} ms`,
+          "Web Worker",
+        ]
+          .filter(Boolean)
+          .join(" · ")
       : validationStatus === "invalid" && error
         ? error.line != null
           ? `✗ Invalid JSON — line ${error.line}${error.column != null ? `, col ${error.column}` : ""}: ${error.message}`
           : `✗ Invalid JSON: ${error.message}`
-        : "Ready — ⌘⇧F to format · ⌘⇧V to validate";
+        : sizeLabel
+          ? `Ready · ${sizeLabel} — ⌘⇧F to format · ⌘⇧V to validate`
+          : "Ready — ⌘⇧F to format · ⌘⇧V to validate";
 
   return (
     <div className="app">
@@ -515,6 +553,7 @@ export default function App() {
         onMinify={handleMinify}
         onClear={handleClear}
         onCopy={handleCopy}
+        onDownload={handleDownload}
         onPaste={handlePaste}
         onSample={handleSample}
         onUpload={handleUploadClick}
@@ -527,6 +566,11 @@ export default function App() {
         repairEnabled={validationStatus === "invalid"}
       />
 
+      {memoryWarning && (
+        <div className="memory-warning">
+          ⚠ Large document ({sizeLabel}) — performance may be affected
+        </div>
+      )}
       {errorLabel && <div className="error-banner">{errorLabel}</div>}
 
       <div className="editor-area">
