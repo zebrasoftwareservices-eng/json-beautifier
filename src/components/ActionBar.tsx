@@ -19,6 +19,7 @@ interface ActionBarProps {
   onPaste: () => void;
   onSample: () => void;
   onUpload: () => void;
+  onLoadUrl: () => void;
   onRepair: () => void;
   processing: boolean;
   copyLabel?: string;
@@ -37,6 +38,7 @@ export function ActionBar({
   onPaste,
   onSample,
   onUpload,
+  onLoadUrl,
   onRepair,
   processing,
   copyLabel = "Copy",
@@ -64,8 +66,9 @@ export function ActionBar({
         </button>
         <button
           className="secondary"
-          disabled
-          title="Load from URL — coming soon"
+          onClick={onLoadUrl}
+          disabled={processing}
+          title="Load JSON from a URL"
         >
           Load URL
         </button>
