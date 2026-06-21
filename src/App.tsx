@@ -498,7 +498,7 @@ export default function App() {
         : `Invalid JSON: ${error.message}`
       : null;
 
-  const inputSizeBytes = input.length; // UTF-16 char count; close enough for JSON
+  const inputSizeBytes = new TextEncoder().encode(input).length;
   const sizeLabel =
     inputSizeBytes > 0
       ? inputSizeBytes >= 1_000_000

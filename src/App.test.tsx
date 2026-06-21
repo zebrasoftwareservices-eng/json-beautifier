@@ -1204,15 +1204,10 @@ describe("Memory warning banner", () => {
 // ---------------------------------------------------------------------------
 
 describe("Table View tab", () => {
-  it("clicking Table tab switches activeTab to 'table'", async () => {
+  it("clicking Code tab switches activeTab to 'code'", async () => {
     const user = userEvent.setup();
     render(<App />);
 
-    // The RightPane mock exposes a 'Code' button that calls onTabChange('code').
-    // We need to add a Table button — but since the mock doesn't render one, we
-    // test that onTabChange is wired correctly by checking the mock's active-tab span.
-    // The mock only exposes a 'Code' button; for table we call onTabChange via Code then back.
-    // Instead, re-mount with a patched mock (we verify tabId roundtrip via Code button):
     const codeBtn = screen.getByRole("button", { name: "Code" });
     await user.click(codeBtn);
     expect(screen.getByTestId("active-tab").textContent).toBe("code");

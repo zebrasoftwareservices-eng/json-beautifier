@@ -76,8 +76,13 @@ export function TableView({ json }: { json: string }) {
   const sorted = useMemo(() => {
     if (!sortKey) return rows;
     return [...rows].sort((a, b) => {
-      const av = formatCell(a[sortKey]);
-      const bv = formatCell(b[sortKey]);
+      const rawA = a[sortKey];
+      const rawB = b[sortKey];
+      if (typeof rawA === "number" && typeof rawB === "number") {
+        return sortDir === "asc" ? rawA - rawB : rawB - rawA;
+      }
+      const av = formatCell(rawA);
+      const bv = formatCell(rawB);
       return sortDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
     });
   }, [rows, sortKey, sortDir]);
