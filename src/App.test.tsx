@@ -792,6 +792,280 @@ describe("Repair button click behavior", () => {
 });
 
 // ---------------------------------------------------------------------------
+// JSO-11: Load URL feature
+// ---------------------------------------------------------------------------
+
+describe("Load URL feature", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("Load URL button is visible and enabled", () => {
+    render(<App />);
+    const btn = screen.getByRole("button", { name: /load url/i });
+    expect(btn).toBeInTheDocument();
+    expect(btn).not.toBeDisabled();
+  });
+
+  it("clicking Load URL button opens the dialog", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /load url/i }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("Cancel button closes the dialog", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole("button", { name: /load url/i }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("submitting invalid scheme URL shows error banner without fetching", async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole("button", { name: /load url/i }));
+
+    const urlInput = screen.getByRole("textbox", { name: "URL" });
+    fireEvent.change(urlInput, { target: { value: "file:///etc/passwd" } });
+    await user.click(screen.getByRole("button", { name: "Load" }));
+
+    await waitFor(() =>
+      expect(document.querySelector(".error-banner")).toBeInTheDocument(),
+    );
+    expect(document.querySelector(".error-banner")?.textContent).toMatch(
+      /not allowed|scheme/i,
+    );
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("valid URL returning 200 + valid JSON loads text into input and closes dialog", async () => {
+    const jsonText = '{"hello":"world"}';
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => null },
+        body: mockBodyReader(jsonText),
+      }),
+    );
+
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole("button", { name: /load url/i }));
+
+    const urlInput = screen.getByRole("textbox", { name: "URL" });
+    fireEvent.change(urlInput, {
+      target: { value: "https://api.example.com/data.json" },
+    });
+    await user.click(screen.getByRole("button", { name: "Load" }));
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    await waitFor(() => expect(inputArea.value).toBe(jsonText));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("URL returning HTTP 404 shows HTTP 404 error banner", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        headers: { get: () => null },
+        text: () => Promise.resolve("Not Found"),
+      }),
+    );
+
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole("button", { name: /load url/i }));
+
+    const urlInput = screen.getByRole("textbox", { name: "URL" });
+    fireEvent.change(urlInput, {
+      target: { value: "https://api.example.com/missing.json" },
+    });
+    await user.click(screen.getByRole("button", { name: "Load" }));
+
+    await waitFor(() =>
+      expect(document.querySelector(".error-banner")).toBeInTheDocument(),
+    );
+    expect(document.querySelector(".error-banner")?.textContent).toMatch(
+      /HTTP 404/,
+    );
+  });
+
+  it("fetch TypeError with navigator.onLine=false shows Network error message", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(new TypeError("Failed to fetch")),
+    );
+    vi.stubGlobal("navigator", { ...navigator, onLine: false });
+
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole("button", { name: /load url/i }));
+
+    const urlInput = screen.getByRole("textbox", { name: "URL" });
+    fireEvent.change(urlInput, {
+      target: { value: "https://api.example.com/data.json" },
+    });
+    await user.click(screen.getByRole("button", { name: "Load" }));
+
+    await waitFor(() =>
+      expect(document.querySelector(".error-banner")).toBeInTheDocument(),
+    );
+    expect(document.querySelector(".error-banner")?.textContent).toMatch(
+      /network error/i,
+    );
+  });
+
+  it("fetch TypeError with navigator.onLine=true shows CORS restriction message", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(new TypeError("Failed to fetch")),
+    );
+    vi.stubGlobal("navigator", { ...navigator, onLine: true });
+
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole("button", { name: /load url/i }));
+
+    const urlInput = screen.getByRole("textbox", { name: "URL" });
+    fireEvent.change(urlInput, {
+      target: { value: "https://api.example.com/data.json" },
+    });
+    await user.click(screen.getByRole("button", { name: "Load" }));
+
+    await waitFor(() =>
+      expect(document.querySelector(".error-banner")).toBeInTheDocument(),
+    );
+    expect(document.querySelector(".error-banner")?.textContent).toMatch(
+      /CORS/i,
+    );
+  });
+
+  it("URL with content-length > 1MB shows too large error", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: {
+          get: (h: string) => (h === "content-length" ? "1100000" : null),
+        },
+        text: () => Promise.resolve("{}"),
+      }),
+    );
+
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole("button", { name: /load url/i }));
+
+    const urlInput = screen.getByRole("textbox", { name: "URL" });
+    fireEvent.change(urlInput, {
+      target: { value: "https://api.example.com/huge.json" },
+    });
+    await user.click(screen.getByRole("button", { name: "Load" }));
+
+    await waitFor(() =>
+      expect(document.querySelector(".error-banner")).toBeInTheDocument(),
+    );
+    expect(document.querySelector(".error-banner")?.textContent).toMatch(
+      /too large/i,
+    );
+  });
+
+  it("URL returning 200 but non-JSON body shows non-JSON response error", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => null },
+        body: mockBodyReader("<html>not json</html>"),
+      }),
+    );
+
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole("button", { name: /load url/i }));
+
+    const urlInput = screen.getByRole("textbox", { name: "URL" });
+    fireEvent.change(urlInput, {
+      target: { value: "https://api.example.com/page.html" },
+    });
+    await user.click(screen.getByRole("button", { name: "Load" }));
+
+    await waitFor(() =>
+      expect(document.querySelector(".error-banner")).toBeInTheDocument(),
+    );
+    expect(document.querySelector(".error-banner")?.textContent).toMatch(
+      /non-JSON response/i,
+    );
+  });
+
+  it("URL without content-length but body > 1MB shows too large error", async () => {
+    const oversized = "a".repeat(1_000_001);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => null },
+        body: mockBodyReader(oversized),
+      }),
+    );
+
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole("button", { name: /load url/i }));
+
+    const urlInput = screen.getByRole("textbox", { name: "URL" });
+    fireEvent.change(urlInput, {
+      target: { value: "https://api.example.com/chunked.json" },
+    });
+    await user.click(screen.getByRole("button", { name: "Load" }));
+
+    await waitFor(() =>
+      expect(document.querySelector(".error-banner")).toBeInTheDocument(),
+    );
+    expect(document.querySelector(".error-banner")?.textContent).toMatch(
+      /too large/i,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// JSO-11: mock a ReadableStream body from a plain string
+// ---------------------------------------------------------------------------
+function mockBodyReader(text: string) {
+  const encoder = new TextEncoder();
+  const chunk = encoder.encode(text);
+  let done = false;
+  return {
+    getReader: () => ({
+      read: () =>
+        Promise.resolve(
+          done
+            ? ({ done: true, value: undefined } as const)
+            : (() => {
+                done = true;
+                return { done: false, value: chunk };
+              })(),
+        ),
+      cancel: () => Promise.resolve(),
+    }),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // JSO-10: FileReader mock helper
 // ---------------------------------------------------------------------------
 function mockFileReader(text: string, error = false) {

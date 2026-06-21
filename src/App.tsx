@@ -4,6 +4,7 @@ import { useJsonWorker } from "./worker/useJsonWorker";
 import { CodeEditor, type CodeEditorError } from "./components/CodeEditor";
 import { SplitPane } from "./components/SplitPane";
 import { ActionBar, SAMPLE_JSON } from "./components/ActionBar";
+import { LoadUrlDialog } from "./components/LoadUrlDialog";
 import {
   RightPane,
   type TabId,
@@ -50,6 +51,8 @@ export default function App() {
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [repairResult, setRepairResult] = useState<RepairResult | null>(null);
+  const [urlDialogOpen, setUrlDialogOpen] = useState(false);
+  const [loadingUrl, setLoadingUrl] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const latestLoadIdRef = useRef(0);
@@ -170,6 +173,104 @@ export default function App() {
     setIsDragging(false);
     const file = e.dataTransfer.files[0];
     if (file) void handleFileLoad(file);
+  }
+
+  async function handleLoadUrl(url: string) {
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch {
+      setError({
+        message: "Invalid URL — please enter a valid http or https URL.",
+      });
+      setValidationStatus("invalid");
+      return;
+    }
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      setError({
+        message: `URL scheme "${parsed.protocol}" is not allowed — only http and https are supported.`,
+      });
+      setValidationStatus("invalid");
+      return;
+    }
+
+    setLoadingUrl(true);
+    setError(null);
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        setError({
+          message: `HTTP ${res.status} — the server returned an error response for this URL.`,
+        });
+        setValidationStatus("invalid");
+        return;
+      }
+      const contentLength = res.headers.get("content-length");
+      if (contentLength && parseInt(contentLength, 10) > 1_000_000) {
+        setError({
+          message: `Response is too large (${(parseInt(contentLength, 10) / 1_000_000).toFixed(1)} MB) — maximum 1 MB. Use the Upload button for large files.`,
+        });
+        setValidationStatus("invalid");
+        return;
+      }
+      // Stream the body so we can reject oversized responses before buffering them
+      const reader = res.body?.getReader();
+      if (!reader) {
+        setError({ message: "Could not read response body." });
+        setValidationStatus("invalid");
+        return;
+      }
+      const decoder = new TextDecoder();
+      let bytes = 0;
+      let text = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        bytes += value.byteLength;
+        if (bytes > 1_000_000) {
+          await reader.cancel();
+          setError({
+            message: `Response is too large (>${(bytes / 1_000_000).toFixed(1)} MB) — maximum 1 MB. Use the Upload button for large files.`,
+          });
+          setValidationStatus("invalid");
+          return;
+        }
+        text += decoder.decode(value, { stream: true });
+      }
+      text += decoder.decode();
+      try {
+        JSON.parse(text);
+      } catch {
+        setError({
+          message:
+            "The URL returned a non-JSON response — check that the endpoint serves JSON content.",
+        });
+        setValidationStatus("invalid");
+        return;
+      }
+      setInput(text);
+      setOutput("");
+      setParseTimeMs(null);
+      setFileName(url);
+      setUrlDialogOpen(false);
+    } catch {
+      // fetch() throws TypeError on both CORS and network failures.
+      // Use navigator.onLine as a heuristic to distinguish them.
+      if (!navigator.onLine) {
+        setError({
+          message:
+            "Network error — check your internet connection and try again.",
+        });
+      } else {
+        setError({
+          message:
+            "Could not fetch the URL — this is likely a CORS restriction. The server must include Access-Control-Allow-Origin headers to allow browser requests. Try a CORS-enabled endpoint or paste the JSON manually.",
+        });
+      }
+      setValidationStatus("invalid");
+    } finally {
+      setLoadingUrl(false);
+    }
   }
 
   async function handleMinify() {
@@ -417,6 +518,7 @@ export default function App() {
         onPaste={handlePaste}
         onSample={handleSample}
         onUpload={handleUploadClick}
+        onLoadUrl={() => setUrlDialogOpen(true)}
         onRepair={handleRepair}
         processing={processing}
         copyLabel={copyLabel}
@@ -482,6 +584,14 @@ export default function App() {
       <div className="status-bar">
         <span>{statusText}</span>
       </div>
+
+      {urlDialogOpen && (
+        <LoadUrlDialog
+          onLoad={handleLoadUrl}
+          onClose={() => setUrlDialogOpen(false)}
+          loading={loadingUrl}
+        />
+      )}
     </div>
   );
 }

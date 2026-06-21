@@ -370,6 +370,66 @@ button.primary-btn {
   white-space: pre;
 }
 
+/* ── Load URL dialog ── */
+.url-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.url-dialog {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px 24px;
+  width: min(480px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.url-dialog__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.url-dialog__form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.url-dialog__input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-h);
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 7px 10px;
+  outline: none;
+}
+
+.url-dialog__input:focus {
+  border-color: var(--accent);
+}
+
+.url-dialog__input::placeholder {
+  color: var(--text);
+  opacity: 0.4;
+}
+
+.url-dialog__actions {
+  display: flex;
+  gap: 8px;
+}
+
 /* ── Repair panel (right pane Repair tab) ── */
 .repair-panel {
   display: flex;
