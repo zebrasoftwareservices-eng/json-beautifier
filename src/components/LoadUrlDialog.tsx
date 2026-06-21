@@ -21,13 +21,13 @@ export function LoadUrlDialog({
   }
 
   function handleBackdropKeyDown(e: React.KeyboardEvent) {
-    if (e.key === "Escape") onClose();
+    if (!loading && e.key === "Escape") onClose();
   }
 
   return (
     <div
       className="url-dialog-backdrop"
-      onClick={onClose}
+      onClick={loading ? undefined : onClose}
       onKeyDown={handleBackdropKeyDown}
       role="presentation"
     >

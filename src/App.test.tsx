@@ -853,7 +853,7 @@ describe("Load URL feature", () => {
         ok: true,
         status: 200,
         headers: { get: () => null },
-        text: () => Promise.resolve(jsonText),
+        body: mockBodyReader(jsonText),
       }),
     );
 
@@ -989,7 +989,7 @@ describe("Load URL feature", () => {
         ok: true,
         status: 200,
         headers: { get: () => null },
-        text: () => Promise.resolve("<html>not json</html>"),
+        body: mockBodyReader("<html>not json</html>"),
       }),
     );
 
@@ -1010,7 +1010,60 @@ describe("Load URL feature", () => {
       /non-JSON response/i,
     );
   });
+
+  it("URL without content-length but body > 1MB shows too large error", async () => {
+    const oversized = "a".repeat(1_000_001);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => null },
+        body: mockBodyReader(oversized),
+      }),
+    );
+
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole("button", { name: /load url/i }));
+
+    const urlInput = screen.getByRole("textbox", { name: "URL" });
+    fireEvent.change(urlInput, {
+      target: { value: "https://api.example.com/chunked.json" },
+    });
+    await user.click(screen.getByRole("button", { name: "Load" }));
+
+    await waitFor(() =>
+      expect(document.querySelector(".error-banner")).toBeInTheDocument(),
+    );
+    expect(document.querySelector(".error-banner")?.textContent).toMatch(
+      /too large/i,
+    );
+  });
 });
+
+// ---------------------------------------------------------------------------
+// JSO-11: mock a ReadableStream body from a plain string
+// ---------------------------------------------------------------------------
+function mockBodyReader(text: string) {
+  const encoder = new TextEncoder();
+  const chunk = encoder.encode(text);
+  let done = false;
+  return {
+    getReader: () => ({
+      read: () =>
+        Promise.resolve(
+          done
+            ? ({ done: true, value: undefined } as const)
+            : (() => {
+                done = true;
+                return { done: false, value: chunk };
+              })(),
+        ),
+      cancel: () => Promise.resolve(),
+    }),
+  };
+}
 
 // ---------------------------------------------------------------------------
 // JSO-10: FileReader mock helper

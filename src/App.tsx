@@ -213,14 +213,31 @@ export default function App() {
         setValidationStatus("invalid");
         return;
       }
-      const text = await res.text();
-      if (text.length > 1_000_000) {
-        setError({
-          message: `Response is too large (${(text.length / 1_000_000).toFixed(1)} MB) — maximum 1 MB. Use the Upload button for large files.`,
-        });
+      // Stream the body so we can reject oversized responses before buffering them
+      const reader = res.body?.getReader();
+      if (!reader) {
+        setError({ message: "Could not read response body." });
         setValidationStatus("invalid");
         return;
       }
+      const decoder = new TextDecoder();
+      let bytes = 0;
+      let text = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        bytes += value.byteLength;
+        if (bytes > 1_000_000) {
+          await reader.cancel();
+          setError({
+            message: `Response is too large (>${(bytes / 1_000_000).toFixed(1)} MB) — maximum 1 MB. Use the Upload button for large files.`,
+          });
+          setValidationStatus("invalid");
+          return;
+        }
+        text += decoder.decode(value, { stream: true });
+      }
+      text += decoder.decode();
       try {
         JSON.parse(text);
       } catch {
