@@ -13,10 +13,16 @@ type JsonArray = JsonValue[];
 
 const BIGINT_SENTINEL = "\x00bigint:";
 
+const INTEGER_RE = /^-?\d+$/;
+
 function treeReviver(_key: string, value: unknown): unknown {
   if (isLosslessNumber(value)) {
     const str = (value as { value: string }).value;
-    return isSafeNumber(str) ? Number(str) : `${BIGINT_SENTINEL}${str}`;
+    if (isSafeNumber(str)) return Number(str);
+    // Only tag integer literals (no decimal point or exponent) as bigint
+    if (INTEGER_RE.test(str)) return `${BIGINT_SENTINEL}${str}`;
+    // Large non-integer (e.g. 1e100) — convert to float, precision may be lost
+    return Number(str);
   }
   return value;
 }

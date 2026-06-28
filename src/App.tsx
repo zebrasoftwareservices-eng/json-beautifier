@@ -280,11 +280,13 @@ export default function App() {
   async function handleMinify() {
     if (!input.trim()) return;
     setProcessing(true);
+    setHasLargeIntegers(false);
     try {
       const result = await process("minify", input);
       if (result.ok) {
         setOutput(result.result);
         setParseTimeMs(result.parseTimeMs);
+        setHasLargeIntegers(result.hasLargeIntegers ?? false);
         setError(null);
         setActiveTab("code");
       } else {
@@ -518,12 +520,16 @@ export default function App() {
 
   const memoryWarning = inputSizeBytes > 10_000_000;
 
+  const bigintNote = hasLargeIntegers
+    ? "⚠ Large integers — precision preserved"
+    : null;
+
   const statusText = processing
     ? `Processing… · Web Worker`
     : validationStatus === "valid" && nodeCount !== null && parseTimeMs !== null
       ? [
           "✓ Valid",
-          hasLargeIntegers ? "⚠ Large integers — precision preserved" : null,
+          bigintNote,
           sizeLabel,
           `${nodeCount} node${nodeCount === 1 ? "" : "s"}`,
           `${parseTimeMs} ms`,
@@ -535,9 +541,14 @@ export default function App() {
         ? error.line != null
           ? `✗ Invalid JSON — line ${error.line}${error.column != null ? `, col ${error.column}` : ""}: ${error.message}`
           : `✗ Invalid JSON: ${error.message}`
-        : sizeLabel
-          ? `Ready · ${sizeLabel} — ⌘⇧F to format · ⌘⇧V to validate`
-          : "Ready — ⌘⇧F to format · ⌘⇧V to validate";
+        : [
+            sizeLabel
+              ? `Ready · ${sizeLabel} — ⌘⇧F to format · ⌘⇧V to validate`
+              : "Ready — ⌘⇧F to format · ⌘⇧V to validate",
+            bigintNote,
+          ]
+            .filter(Boolean)
+            .join(" · ");
 
   return (
     <div className="app">
