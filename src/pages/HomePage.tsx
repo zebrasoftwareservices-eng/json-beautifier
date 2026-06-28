@@ -47,7 +47,9 @@ export function HomePage() {
         <div className="home-trust">
           {TRUST_BADGES.map((b) => (
             <div key={b.icon} className="home-trust__badge">
-              <span className="home-trust__icon">{b.icon}</span>
+              <span className="home-trust__icon" aria-hidden="true">
+                {b.icon}
+              </span>
               <span>{b.text}</span>
             </div>
           ))}

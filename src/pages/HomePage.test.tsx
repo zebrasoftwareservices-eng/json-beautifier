@@ -167,9 +167,10 @@ describe("semantic structure", () => {
     expect(screen.getByRole("main")).toBeInTheDocument();
   });
 
-  it("renders a <section> for the hero area", () => {
+  it("renders the hero area as a <section> element", () => {
     const { container } = renderHomePage();
-    const sections = container.querySelectorAll("section");
-    expect(sections.length).toBeGreaterThanOrEqual(1);
+    const heroEl = container.querySelector(".home-hero");
+    expect(heroEl).not.toBeNull();
+    expect(heroEl!.tagName).toBe("SECTION");
   });
 });
