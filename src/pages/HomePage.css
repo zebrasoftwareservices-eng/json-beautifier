@@ -1,0 +1,171 @@
+/* ── Homepage layout ── */
+.home {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 24px 80px;
+  gap: 0;
+}
+
+/* ── Hero ── */
+.home-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 72px 0 48px;
+  max-width: 760px;
+  width: 100%;
+}
+
+.home-hero__headline {
+  font-size: 52px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -1.5px;
+  color: var(--text-h);
+  margin: 0 0 20px;
+}
+
+@media (max-width: 768px) {
+  .home-hero__headline {
+    font-size: 32px;
+  }
+}
+
+.home-hero__accent {
+  color: var(--accent);
+}
+
+.home-hero__sub {
+  font-size: 20px;
+  color: var(--text);
+  margin: 0 0 40px;
+  line-height: 1.5;
+}
+
+/* ── Trust badges ── */
+.home-trust {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 40px;
+  width: 100%;
+  max-width: 520px;
+}
+
+.home-trust__badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  color: var(--text);
+  text-align: left;
+}
+
+.home-trust__icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+/* ── CTA button ── */
+.home-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 28px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.home-cta:hover {
+  opacity: 0.88;
+}
+
+/* ── Stats bar ── */
+.home-stats {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 20px 32px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--social-bg);
+  font-size: 14px;
+  color: var(--text);
+  margin-bottom: 72px;
+  width: 100%;
+  max-width: 680px;
+  box-sizing: border-box;
+}
+
+.home-stats__label {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.home-stats__item strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ── Feature cards ── */
+.home-features {
+  width: 100%;
+  max-width: 900px;
+  text-align: center;
+}
+
+.home-features__heading {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-h);
+  margin: 0 0 36px;
+  letter-spacing: -0.5px;
+}
+
+.home-features__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 700px) {
+  .home-features__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.home-feature-card {
+  padding: 28px 24px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  text-align: left;
+  background: var(--social-bg);
+  transition: border-color 0.15s ease;
+}
+
+.home-feature-card:hover {
+  border-color: var(--accent-border);
+}
+
+.home-feature-card__title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-h);
+  margin: 0 0 10px;
+}
+
+.home-feature-card__desc {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text);
+  margin: 0;
+}
