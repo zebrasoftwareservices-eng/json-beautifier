@@ -11,6 +11,7 @@ export type WorkerSuccess = {
   parseTimeMs: number;
   nodeCount?: number;
   fixes?: string[];
+  hasLargeIntegers?: boolean;
 };
 
 export type WorkerError = {

@@ -752,6 +752,24 @@ button.primary-btn {
   color: var(--text);
   opacity: 0.6;
 }
+.tree-value--bigint {
+  color: var(--warning);
+  font-family: var(--mono);
+}
+
+.tree-bigint-badge {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 0 4px;
+  font-size: 9px;
+  font-family: var(--mono);
+  border: 1px solid var(--warning);
+  border-radius: 3px;
+  color: var(--warning);
+  opacity: 0.75;
+  vertical-align: middle;
+  line-height: 14px;
+}
 
 .tree-summary {
   font-style: italic;
