@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 .claude/settings.local.json
 .claude/launch.json
+
+elango-note

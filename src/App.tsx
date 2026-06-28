@@ -53,6 +53,7 @@ export default function App() {
   const [repairResult, setRepairResult] = useState<RepairResult | null>(null);
   const [urlDialogOpen, setUrlDialogOpen] = useState(false);
   const [loadingUrl, setLoadingUrl] = useState(false);
+  const [hasLargeIntegers, setHasLargeIntegers] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const latestLoadIdRef = useRef(0);
@@ -74,6 +75,7 @@ export default function App() {
         if (result.ok) {
           setOutput(result.result);
           setParseTimeMs(result.parseTimeMs);
+          setHasLargeIntegers(result.hasLargeIntegers ?? false);
           setError(null);
           setActiveTab("code");
         } else {
@@ -84,12 +86,14 @@ export default function App() {
           });
           setOutput("");
           setParseTimeMs(null);
+          setHasLargeIntegers(false);
           setValidationStatus("invalid");
         }
       } catch {
         setError({ message: "Formatting failed — please try again." });
         setOutput("");
         setParseTimeMs(null);
+        setHasLargeIntegers(false);
         setValidationStatus("invalid");
       } finally {
         formatInFlightRef.current = false;
@@ -347,6 +351,7 @@ export default function App() {
     setNodeCount(null);
     setValidationStatus("idle");
     setRepairResult(null);
+    setHasLargeIntegers(false);
   }
 
   async function handleCopy() {
@@ -405,6 +410,7 @@ export default function App() {
     setNodeCount(null);
     setValidationStatus("idle");
     setRepairResult(null);
+    setHasLargeIntegers(false);
   }
 
   const handleValidate = useCallback(
@@ -421,6 +427,7 @@ export default function App() {
         setError(null);
         setNodeCount(result.nodeCount ?? null);
         setParseTimeMs(result.parseTimeMs);
+        setHasLargeIntegers(result.hasLargeIntegers ?? false);
         setValidationStatus("valid");
       } else {
         setError({
@@ -430,6 +437,7 @@ export default function App() {
         });
         setNodeCount(null);
         setParseTimeMs(null);
+        setHasLargeIntegers(false);
         setValidationStatus("invalid");
         setActiveTab("error");
       }
@@ -515,6 +523,7 @@ export default function App() {
     : validationStatus === "valid" && nodeCount !== null && parseTimeMs !== null
       ? [
           "✓ Valid",
+          hasLargeIntegers ? "⚠ Large integers — precision preserved" : null,
           sizeLabel,
           `${nodeCount} node${nodeCount === 1 ? "" : "s"}`,
           `${parseTimeMs} ms`,

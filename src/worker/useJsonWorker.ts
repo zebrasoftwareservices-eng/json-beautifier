@@ -8,6 +8,7 @@ export type WorkerResult =
       parseTimeMs: number;
       nodeCount?: number;
       fixes?: string[];
+      hasLargeIntegers?: boolean;
     }
   | { ok: false; message: string; line?: number; column?: number };
 

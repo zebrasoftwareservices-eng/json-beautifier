@@ -1,4 +1,9 @@
 import { useState, useRef, useCallback, useMemo, useEffect, memo } from "react";
+import {
+  parse as losslessParse,
+  isSafeNumber,
+  isLosslessNumber,
+} from "lossless-json";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -6,12 +11,29 @@ type JsonValue = string | number | boolean | null | JsonObject | JsonArray;
 type JsonObject = { [key: string]: JsonValue };
 type JsonArray = JsonValue[];
 
+const BIGINT_SENTINEL = "\x00bigint:";
+
+function treeReviver(_key: string, value: unknown): unknown {
+  if (isLosslessNumber(value)) {
+    const str = (value as { value: string }).value;
+    return isSafeNumber(str) ? Number(str) : `${BIGINT_SENTINEL}${str}`;
+  }
+  return value;
+}
+
 interface FlatRow {
   path: string;
   depth: number;
   displayKey: string | null;
   value: JsonValue;
-  type: "object" | "array" | "string" | "number" | "boolean" | "null";
+  type:
+    | "object"
+    | "array"
+    | "string"
+    | "number"
+    | "boolean"
+    | "null"
+    | "bigint";
   hasChildren: boolean;
   isExpanded: boolean;
 }
@@ -21,6 +43,7 @@ interface FlatRow {
 function getType(v: JsonValue): FlatRow["type"] {
   if (v === null) return "null";
   if (Array.isArray(v)) return "array";
+  if (typeof v === "string" && v.startsWith(BIGINT_SENTINEL)) return "bigint";
   return typeof v as FlatRow["type"];
 }
 
@@ -93,6 +116,8 @@ function formatValue(row: FlatRow): string {
       return `"${String(row.value).slice(0, 80)}${String(row.value).length > 80 ? "…" : ""}"`;
     case "null":
       return "null";
+    case "bigint":
+      return String(row.value).slice(BIGINT_SENTINEL.length);
     default:
       return String(row.value);
   }
@@ -123,10 +148,14 @@ const TreeRow = memo(function TreeRow({
   const handleCopyValue = useCallback(
     async (e: React.MouseEvent) => {
       e.stopPropagation();
-      const text =
-        row.type === "string"
-          ? String(row.value)
-          : JSON.stringify(row.value, null, 2);
+      let text: string;
+      if (row.type === "string") {
+        text = String(row.value);
+      } else if (row.type === "bigint") {
+        text = String(row.value).slice(BIGINT_SENTINEL.length);
+      } else {
+        text = JSON.stringify(row.value, null, 2);
+      }
       await navigator.clipboard.writeText(text).catch(() => {});
     },
     [row.value, row.type],
@@ -197,7 +226,12 @@ const TreeRow = memo(function TreeRow({
 
       {/* Value */}
       <span className={`tree-value tree-value--${row.type}`}>
-        {isPrimitive ? (
+        {row.type === "bigint" ? (
+          <>
+            {highlight(valueStr)}
+            <span className="tree-bigint-badge">int64</span>
+          </>
+        ) : isPrimitive ? (
           highlight(valueStr)
         ) : (
           <span className="tree-summary">{valueStr}</span>
@@ -237,7 +271,10 @@ export function TreeView({ json }: TreeViewProps) {
   const { parsed, parseError } = useMemo(() => {
     if (!json.trim()) return { parsed: null, parseError: false };
     try {
-      return { parsed: JSON.parse(json) as JsonValue, parseError: false };
+      return {
+        parsed: losslessParse(json, treeReviver) as JsonValue,
+        parseError: false,
+      };
     } catch {
       return { parsed: null, parseError: true };
     }
