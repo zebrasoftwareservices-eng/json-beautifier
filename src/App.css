@@ -103,7 +103,7 @@ button {
   border-radius: 4px;
   border: none;
   background: var(--accent);
-  color: #fff;
+  color: var(--text-on-accent);
   font-size: 12px;
   font-weight: 500;
   font-family: var(--sans);
@@ -135,7 +135,7 @@ button.primary-btn {
 
 /* ── Error banner ── */
 .error-banner {
-  background: rgba(239, 68, 68, 0.08);
+  background: var(--error-bg);
   color: var(--error);
   border-bottom: 1px solid var(--border);
   padding: 4px 16px;
@@ -343,8 +343,8 @@ button.primary-btn {
 }
 
 .error-panel__snippet {
-  background: rgba(239, 68, 68, 0.06);
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: var(--error-bg);
+  border: 1px solid var(--error-border-subtle);
   border-left: 3px solid var(--error);
   border-radius: 4px;
   padding: 8px 12px;
@@ -357,7 +357,7 @@ button.primary-btn {
 
 /* ── Memory warning banner ── */
 .memory-warning {
-  background: rgba(234, 179, 8, 0.08);
+  background: var(--warning-bg);
   color: var(--warning);
   border-bottom: 1px solid var(--border);
   padding: 4px 16px;
@@ -549,7 +549,7 @@ button.primary-btn {
 
 .repair-panel__accept-btn {
   background: var(--success);
-  color: #fff;
+  color: var(--text-on-accent);
   font-size: 12px;
   font-weight: 600;
   padding: 4px 12px;
@@ -799,7 +799,7 @@ button.primary-btn {
 }
 
 mark.tree-match {
-  background: rgba(99, 102, 241, 0.35);
+  background: var(--accent-bg-strong);
   color: var(--accent);
   border-radius: 2px;
 }

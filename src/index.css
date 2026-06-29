@@ -15,10 +15,15 @@
   --accent: #6366f1;
   --accent-muted: #a78bfa;
   --accent-bg: rgba(99, 102, 241, 0.1);
+  --accent-bg-strong: rgba(99, 102, 241, 0.3);
   --accent-border: rgba(99, 102, 241, 0.4);
   --success: #0d9488;
   --warning: #d97706;
   --error: #ef4444;
+  --error-bg: rgba(239, 68, 68, 0.08);
+  --error-border-subtle: rgba(239, 68, 68, 0.2);
+  --warning-bg: rgba(234, 179, 8, 0.08);
+  --text-on-accent: #fff;
   --code-bg: #f1f3f7;
   --social-bg: rgba(241, 243, 247, 0.6);
   --shadow:
@@ -50,12 +55,17 @@
     --accent: #6366f1;
     --accent-muted: #a78bfa;
     --accent-bg: rgba(99, 102, 241, 0.15);
+    --accent-bg-strong: rgba(99, 102, 241, 0.35);
     --accent-border: rgba(99, 102, 241, 0.4);
 
     /* Semantic */
     --success: #0d9488;
     --warning: #d97706;
     --error: #ef4444;
+    --error-bg: rgba(239, 68, 68, 0.08);
+    --error-border-subtle: rgba(239, 68, 68, 0.2);
+    --warning-bg: rgba(234, 179, 8, 0.08);
+    --text-on-accent: #fff;
 
     /* Component surfaces */
     --code-bg: var(--surface-elevated);

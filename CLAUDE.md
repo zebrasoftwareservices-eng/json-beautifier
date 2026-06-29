@@ -38,9 +38,22 @@ Accent / semantic:
 
 - `--accent`: #6366f1
 - `--accent-muted`: #a78bfa
+- `--accent-bg`: rgba(99,102,241,0.1/0.15 in dark) — hover/subtle tint
+- `--accent-bg-strong`: rgba(99,102,241,0.3/0.35 in dark) — highlights
+- `--accent-border`: rgba(99,102,241,0.4) — outline rings
 - `--success`: #0d9488
 - `--warning`: #d97706
 - `--error`: #ef4444
+- `--error-bg`: rgba(239,68,68,0.08) — error banner fill
+- `--error-border-subtle`: rgba(239,68,68,0.2) — snippet border
+- `--warning-bg`: rgba(234,179,8,0.08) — warning banner fill
+- `--text-on-accent`: #fff — text on accent/success backgrounds
+
+Component surfaces:
+
+- `--code-bg`: code block background (maps to surface-elevated in dark)
+- `--social-bg`: social proof card background
+- `--shadow`: box-shadow definition
 
 Fonts:
 
