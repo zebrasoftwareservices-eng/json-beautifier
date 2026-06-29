@@ -280,6 +280,13 @@ button.primary-btn {
   border-bottom-color: var(--accent);
 }
 
+.tab-btn__badge {
+  margin-left: 4px;
+  font-size: 10px;
+  color: var(--warning);
+  vertical-align: middle;
+}
+
 .tab-content {
   flex: 1;
   min-height: 0;
@@ -363,6 +370,27 @@ button.primary-btn {
   line-height: 1.6;
   overflow-x: auto;
   white-space: pre;
+}
+
+.error-panel__suggestion {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: rgba(163, 230, 53, 0.07);
+  border: 1px solid rgba(163, 230, 53, 0.2);
+  border-radius: 4px;
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.error-panel__suggestion-label {
+  font-weight: 600;
+  color: #a3e635;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* ── Memory warning banner ── */
@@ -699,6 +727,17 @@ button.primary-btn {
   color: var(--text-muted);
   font-family: var(--mono);
   font-size: 13px;
+}
+
+.tree-partial-banner {
+  padding: 6px 12px;
+  background: var(--warning-bg);
+  border-bottom: 1px solid rgba(217, 119, 6, 0.25);
+  color: var(--warning);
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 500;
+  flex-shrink: 0;
 }
 
 /* ── Tree empty state with ghosted illustration ── */

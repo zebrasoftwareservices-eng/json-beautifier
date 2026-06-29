@@ -33,6 +33,8 @@ interface RightPaneProps {
   input?: string;
   repairResult?: RepairResult | null;
   onAcceptRepair?: (text: string) => void;
+  partialJson?: string | null;
+  isPartialTree?: boolean;
 }
 
 function Placeholder({ label }: { label: string }) {
@@ -81,6 +83,12 @@ function ErrorPanel({
           : "Parse error"}
       </p>
       <p className="error-panel__message">{error.message}</p>
+      {error.suggestion && (
+        <p className="error-panel__suggestion">
+          <span className="error-panel__suggestion-label">Did you mean?</span>{" "}
+          {error.suggestion}
+        </p>
+      )}
       {contextSnippet && (
         <pre className="error-panel__snippet">{contextSnippet}</pre>
       )}
@@ -154,6 +162,8 @@ export function RightPane({
   input,
   repairResult,
   onAcceptRepair,
+  partialJson,
+  isPartialTree,
 }: RightPaneProps) {
   const onKeyDown = (e: React.KeyboardEvent) => {
     const currentIndex = TABS.findIndex((t) => t.id === activeTab);
@@ -186,6 +196,11 @@ export function RightPane({
             onClick={() => onTabChange(tab.id)}
           >
             {tab.label}
+            {tab.id === "tree" && isPartialTree && (
+              <span className="tab-btn__badge" aria-label="partial tree">
+                ⚠
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -201,7 +216,10 @@ export function RightPane({
             style={{ height: "100%" }}
           >
             {tab.id === "tree" ? (
-              <TreeView json={output} />
+              <TreeView
+                json={isPartialTree && partialJson ? partialJson : output}
+                isPartial={isPartialTree}
+              />
             ) : tab.id === "code" ? (
               <CodeEditor
                 value={output}

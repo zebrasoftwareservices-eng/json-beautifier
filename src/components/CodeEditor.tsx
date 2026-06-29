@@ -21,6 +21,7 @@ export interface CodeEditorError {
   message: string;
   line?: number;
   column?: number;
+  suggestion?: string;
 }
 
 interface CodeEditorProps {
