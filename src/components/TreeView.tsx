@@ -292,6 +292,24 @@ export function TreeView({ json }: TreeViewProps) {
   const [containerHeight, setContainerHeight] = useState(400);
   const [breadcrumb, setBreadcrumb] = useState("$");
   const containerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Listen for keyboard shortcut events dispatched from App
+  useEffect(() => {
+    function onCollapseAll() {
+      setExpanded(new Set());
+    }
+    function onFocusSearch() {
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+    }
+    window.addEventListener("tree:collapse-all", onCollapseAll);
+    window.addEventListener("tree:focus-search", onFocusSearch);
+    return () => {
+      window.removeEventListener("tree:collapse-all", onCollapseAll);
+      window.removeEventListener("tree:focus-search", onFocusSearch);
+    };
+  }, []);
 
   // Reset expanded state when JSON changes to a different document
   const prevJsonRef = useRef(json);
@@ -389,6 +407,7 @@ export function TreeView({ json }: TreeViewProps) {
       {/* Toolbar */}
       <div className="tree-toolbar">
         <input
+          ref={searchInputRef}
           className="tree-search"
           type="search"
           placeholder="Search keys and values…"

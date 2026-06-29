@@ -832,3 +832,53 @@ mark.tree-match {
     padding-left: 4px;
   }
 }
+
+/* ── Dwell tooltips ── */
+.dwell-wrapper {
+  display: inline-flex;
+  position: relative;
+}
+
+.dwell-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1f2440;
+  border: 1px solid #2d3250;
+  border-radius: 6px;
+  padding: 5px 9px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 100;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  animation: dwell-fade-in 80ms ease forwards;
+}
+
+@keyframes dwell-fade-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.dwell-tooltip__label {
+  color: #cbd5e1;
+}
+
+.dwell-tooltip__kbd {
+  font-family: var(--mono, monospace);
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid #2d3250;
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: #94a3b8;
+}
