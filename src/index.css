@@ -36,6 +36,10 @@
   --surface-1: var(--surface-elevated);
   --border-strong: #c8cfe0;
   --radius: 8px;
+  --toolbar-icon-format: #818cf8;
+  --toolbar-icon-validate: #34d399;
+  --toolbar-icon-export: #60a5fa;
+  --toolbar-icon-clear: #f87171;
 
   /* Legacy aliases (keep components working during migration) */
   --bg: var(--surface-panel);

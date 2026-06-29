@@ -1,14 +1,23 @@
+import type { ComponentPropsWithoutRef } from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { ActionBar } from "./ActionBar";
 
-// ── Mock Tabler icons to avoid SVG rendering issues ───────────────────────────
+// ── Mock Tabler icons — forward props so className/aria-hidden/size are covered
 
 vi.mock("@tabler/icons-react", () => ({
-  IconBolt: () => <svg data-testid="icon-bolt" />,
-  IconCheck: () => <svg data-testid="icon-check" />,
-  IconDownload: () => <svg data-testid="icon-download" />,
-  IconTrash: () => <svg data-testid="icon-trash" />,
+  IconBolt: (props: ComponentPropsWithoutRef<"svg">) => (
+    <svg data-testid="icon-bolt" {...props} />
+  ),
+  IconCheck: (props: ComponentPropsWithoutRef<"svg">) => (
+    <svg data-testid="icon-check" {...props} />
+  ),
+  IconDownload: (props: ComponentPropsWithoutRef<"svg">) => (
+    <svg data-testid="icon-download" {...props} />
+  ),
+  IconTrash: (props: ComponentPropsWithoutRef<"svg">) => (
+    <svg data-testid="icon-trash" {...props} />
+  ),
 }));
 
 // ── Minimal props for ActionBar ───────────────────────────────────────────────

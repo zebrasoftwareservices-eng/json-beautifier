@@ -162,16 +162,16 @@ button.toolbar-btn .toolbar-btn__icon {
 }
 
 button.toolbar-btn--format .toolbar-btn__icon {
-  color: #818cf8;
+  color: var(--toolbar-icon-format);
 }
 button.toolbar-btn--validate .toolbar-btn__icon {
-  color: #34d399;
+  color: var(--toolbar-icon-validate);
 }
 button.toolbar-btn--export .toolbar-btn__icon {
-  color: #60a5fa;
+  color: var(--toolbar-icon-export);
 }
 button.toolbar-btn--clear .toolbar-btn__icon {
-  color: #f87171;
+  color: var(--toolbar-icon-clear);
 }
 
 /* ── Error banner ── */
