@@ -75,11 +75,13 @@ export default function App() {
   const formatInFlightRef = useRef(false);
 
   // Accepts optional content to format (avoids stale closure on state)
+  // Accepts optional content to format (avoids stale closure on state).
+  // Returns true only when the format actually succeeded.
   const handleFormat = useCallback(
-    async (content?: string) => {
+    async (content?: string): Promise<boolean> => {
       const toFormat = content ?? input;
-      if (!toFormat.trim()) return;
-      if (formatInFlightRef.current) return;
+      if (!toFormat.trim()) return false;
+      if (formatInFlightRef.current) return false;
       formatInFlightRef.current = true;
       setProcessing(true);
       try {
@@ -90,6 +92,7 @@ export default function App() {
           setHasLargeIntegers(result.hasLargeIntegers ?? false);
           setError(null);
           setActiveTab("code");
+          return true;
         } else {
           setError({
             message: result.message,
@@ -100,6 +103,7 @@ export default function App() {
           setParseTimeMs(null);
           setHasLargeIntegers(false);
           setValidationStatus("invalid");
+          return false;
         }
       } catch {
         setError({ message: "Formatting failed — please try again." });
@@ -107,6 +111,7 @@ export default function App() {
         setParseTimeMs(null);
         setHasLargeIntegers(false);
         setValidationStatus("invalid");
+        return false;
       } finally {
         formatInFlightRef.current = false;
         setProcessing(false);
@@ -427,7 +432,9 @@ export default function App() {
     setHasLargeIntegers(false);
     // Format immediately and show the tree so the user sees results right away
     handleFormat(SAMPLE_JSON)
-      .then(() => setActiveTab("tree"))
+      .then((ok) => {
+        if (ok) setActiveTab("tree");
+      })
       .catch(() => {});
   }
 
@@ -827,7 +834,7 @@ export default function App() {
       <div className="status-bar">
         <span>{statusText}</span>
         <span className="status-bar__privacy">
-          Processed in your browser · No data sent
+          Processed locally · Load URL requests the remote host directly
         </span>
       </div>
 

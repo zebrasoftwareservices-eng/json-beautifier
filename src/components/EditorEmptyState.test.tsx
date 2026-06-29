@@ -161,15 +161,16 @@ describe("EditorEmptyState — callbacks", () => {
 // ── 4. Accessibility ──────────────────────────────────────────────────────────
 
 describe("EditorEmptyState — accessibility", () => {
-  it("has an aria-label on the container div", () => {
-    const { container } = render(
+  it("exposes a named group for assistive technology", () => {
+    render(
       <EditorEmptyState
         onPaste={vi.fn()}
         onSample={vi.fn()}
         onLoadUrl={vi.fn()}
       />,
     );
-    const root = container.querySelector(".editor-empty-state");
-    expect(root).toHaveAttribute("aria-label", "Empty editor quick actions");
+    expect(
+      screen.getByRole("group", { name: "Empty editor quick actions" }),
+    ).toBeInTheDocument();
   });
 });

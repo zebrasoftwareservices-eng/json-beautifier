@@ -12,7 +12,11 @@ export function EditorEmptyState({
   onLoadUrl,
 }: EditorEmptyStateProps) {
   return (
-    <div className="editor-empty-state" aria-label="Empty editor quick actions">
+    <div
+      className="editor-empty-state"
+      role="group"
+      aria-label="Empty editor quick actions"
+    >
       <p className="editor-empty-state__hint">
         Paste JSON, drop a file, or load from URL
       </p>
