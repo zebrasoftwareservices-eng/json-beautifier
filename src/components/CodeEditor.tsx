@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { EditorState } from "@codemirror/state";
+import { EditorState, Compartment } from "@codemirror/state";
 import {
   EditorView,
   lineNumbers,
@@ -54,9 +54,8 @@ export function CodeEditor({
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const prefersDark =
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const darkMq = window.matchMedia("(prefers-color-scheme: dark)");
+    const themeCompartment = new Compartment();
 
     const extensions = [
       lineNumbers(),
@@ -69,7 +68,7 @@ export function CodeEditor({
       bracketMatching(),
       closeBrackets(),
       json(),
-      ...(prefersDark ? [oneDark] : []),
+      themeCompartment.of(darkMq.matches ? oneDark : []),
       linter(() => []),
       keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap]),
       EditorView.updateListener.of((update) => {
@@ -123,7 +122,16 @@ export function CodeEditor({
     });
 
     viewRef.current = view;
+
+    function onThemeChange(e: MediaQueryListEvent) {
+      view.dispatch({
+        effects: themeCompartment.reconfigure(e.matches ? oneDark : []),
+      });
+    }
+    darkMq.addEventListener("change", onThemeChange);
+
     return () => {
+      darkMq.removeEventListener("change", onThemeChange);
       view.destroy();
       viewRef.current = null;
     };
