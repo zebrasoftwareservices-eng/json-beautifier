@@ -42,15 +42,27 @@ describe("empty / whitespace json", () => {
   it("renders placeholder for empty string", () => {
     render(<TreeView json="" />);
     expect(
-      screen.getByText("Format JSON to explore the tree"),
+      screen.getByText("Paste JSON on the left to explore it here"),
     ).toBeInTheDocument();
   });
 
   it("renders placeholder for whitespace-only string", () => {
     render(<TreeView json="   " />);
     expect(
-      screen.getByText("Format JSON to explore the tree"),
+      screen.getByText("Paste JSON on the left to explore it here"),
     ).toBeInTheDocument();
+  });
+
+  it("renders a div with class tree-empty-state for empty string", () => {
+    const { container } = render(<TreeView json="" />);
+    expect(container.querySelector(".tree-empty-state")).toBeInTheDocument();
+  });
+
+  it("renders an aria-hidden ghost illustration for empty string", () => {
+    const { container } = render(<TreeView json="" />);
+    const ghost = container.querySelector(".tree-ghost");
+    expect(ghost).toBeInTheDocument();
+    expect(ghost).toHaveAttribute("aria-hidden", "true");
   });
 });
 
