@@ -19,13 +19,33 @@
 3. npm run build
    Only push if all three pass — no exceptions.
 
-## Color tokens
+## Color tokens (three-surface dark mode design system — JSO-15)
 
-- background: #1a1e2e
-- primary: #6366f1
-- success: #0d9488
-- error: #ef4444
-- border: #2d3250
+Surface layers:
+
+- `--surface-base`: #0f1117 (page background, outermost shell)
+- `--surface-panel`: #161b27 (editor, tree view, primary content)
+- `--surface-elevated`: #1e2535 (toolbar, nav, inputs, modals)
+- `--border`: #252d3d
+
+Text:
+
+- `--text-primary`: #e2e8f0
+- `--text-secondary`: #94a3b8
+- `--text-muted`: #475569
+
+Accent / semantic:
+
+- `--accent`: #6366f1
+- `--accent-muted`: #a78bfa
+- `--success`: #0d9488
+- `--warning`: #d97706
+- `--error`: #ef4444
+
+Fonts:
+
+- UI chrome: `Inter` (var(--sans))
+- Code content: `JetBrains Mono` (var(--mono))
 
 ## Phase 1 only — do not build yet
 

@@ -10,12 +10,12 @@
 }
 
 .palette-dialog {
-  background: #1a1e2e;
-  border: 1px solid #2d3250;
-  border-radius: 10px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
   width: 100%;
   max-width: 520px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -24,23 +24,25 @@
 .palette-input {
   width: 100%;
   box-sizing: border-box;
-  padding: 14px 16px;
+  padding: 12px 16px;
   background: transparent;
   border: none;
-  border-bottom: 1px solid #2d3250;
-  color: #e2e8f0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
   font-size: 15px;
+  font-family: var(--sans);
+  font-weight: 500;
   outline: none;
 }
 
 .palette-input::placeholder {
-  color: #64748b;
+  color: var(--text-muted);
 }
 
 .palette-list {
   list-style: none;
   margin: 0;
-  padding: 6px 0;
+  padding: 4px 0;
   max-height: 340px;
   overflow-y: auto;
 }
@@ -49,16 +51,17 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 9px 16px;
+  padding: 8px 16px;
   cursor: pointer;
   font-size: 14px;
-  color: #cbd5e1;
+  font-family: var(--sans);
+  color: var(--text-secondary);
   transition: background 0.08s;
 }
 
 .palette-item--active {
-  background: rgba(99, 102, 241, 0.18);
-  color: #e2e8f0;
+  background: var(--accent-bg);
+  color: var(--text-primary);
 }
 
 .palette-item--recent .palette-item__label::before {
@@ -72,26 +75,29 @@
 }
 
 .palette-item__kbd {
-  font-family: var(--mono, monospace);
+  font-family: var(--mono);
   font-size: 11px;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid #2d3250;
-  border-radius: 4px;
-  padding: 2px 6px;
-  color: #94a3b8;
+  letter-spacing: 0;
+  background: var(--surface-panel);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0 4px;
+  color: var(--text-muted);
   white-space: nowrap;
 }
 
 .palette-empty {
   padding: 20px 16px;
-  color: #64748b;
+  color: var(--text-muted);
   font-size: 14px;
+  font-family: var(--sans);
   text-align: center;
 }
 
 .palette-hint {
   padding: 8px 16px;
-  border-top: 1px solid #2d3250;
+  border-top: 1px solid var(--border);
   font-size: 11px;
-  color: #475569;
+  font-family: var(--sans);
+  color: var(--text-muted);
 }
