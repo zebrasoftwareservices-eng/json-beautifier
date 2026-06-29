@@ -79,7 +79,7 @@ export function CommandPalette({
     const list = listRef.current;
     if (!list) return;
     const item = list.children[activeIdx] as HTMLElement | undefined;
-    item?.scrollIntoView({ block: "nearest" });
+    item?.scrollIntoView?.({ block: "nearest" });
   }, [activeIdx]);
 
   const execute = useCallback(
