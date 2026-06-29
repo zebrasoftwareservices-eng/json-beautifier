@@ -2,10 +2,28 @@ import { DwellButton } from "./DwellButton";
 
 const SAMPLE_JSON = JSON.stringify(
   {
-    name: "Alice",
-    age: 30,
-    address: { city: "San Francisco", zip: "94107" },
-    tags: ["json", "beautifier"],
+    user: {
+      id: 42,
+      name: "Alice Chen",
+      email: "alice@example.com",
+      verified: true,
+      address: {
+        street: "123 Main St",
+        city: "San Francisco",
+        state: "CA",
+        zip: "94107",
+      },
+      tags: ["developer", "open-source"],
+      metadata: {
+        created_at: "2024-01-15T10:30:00Z",
+        last_login: "2026-06-29T09:00:00Z",
+        preferences: {
+          theme: "dark",
+          notifications: true,
+          language: "en",
+        },
+      },
+    },
   },
   null,
   2,

@@ -388,8 +388,17 @@ export function TreeView({ json }: TreeViewProps) {
 
   if (!json.trim()) {
     return (
-      <div className="tree-empty">
-        <span>Format JSON to explore the tree</span>
+      <div className="tree-empty-state">
+        <div className="tree-ghost" aria-hidden="true">
+          <div className="tree-ghost__row tree-ghost__row--1" />
+          <div className="tree-ghost__row tree-ghost__row--2" />
+          <div className="tree-ghost__row tree-ghost__row--3" />
+          <div className="tree-ghost__row tree-ghost__row--4" />
+          <div className="tree-ghost__row tree-ghost__row--5" />
+        </div>
+        <p className="tree-empty-state__cta">
+          Paste JSON on the left to explore it here
+        </p>
       </div>
     );
   }

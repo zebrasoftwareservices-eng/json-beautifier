@@ -4,6 +4,7 @@ import { useJsonWorker } from "./worker/useJsonWorker";
 import { CodeEditor, type CodeEditorError } from "./components/CodeEditor";
 import { SplitPane } from "./components/SplitPane";
 import { ActionBar, SAMPLE_JSON } from "./components/ActionBar";
+import { EditorEmptyState } from "./components/EditorEmptyState";
 import { LoadUrlDialog } from "./components/LoadUrlDialog";
 import {
   CommandPalette,
@@ -424,6 +425,10 @@ export default function App() {
     setValidationStatus("idle");
     setRepairResult(null);
     setHasLargeIntegers(false);
+    // Format immediately and show the tree so the user sees results right away
+    handleFormat(SAMPLE_JSON)
+      .then(() => setActiveTab("tree"))
+      .catch(() => {});
   }
 
   const handleValidate = useCallback(
@@ -777,6 +782,13 @@ export default function App() {
                 error={error}
                 placeholder={'Paste or type JSON here…\n\n{"key": "value"}'}
               />
+              {!input && (
+                <EditorEmptyState
+                  onPaste={handlePaste}
+                  onSample={handleSample}
+                  onLoadUrl={() => setUrlDialogOpen(true)}
+                />
+              )}
               {isDragging && (
                 <div className="drop-overlay" aria-hidden="true">
                   <span>Drop JSON file to load</span>
@@ -814,6 +826,9 @@ export default function App() {
 
       <div className="status-bar">
         <span>{statusText}</span>
+        <span className="status-bar__privacy">
+          Processed in your browser · No data sent
+        </span>
       </div>
 
       {urlDialogOpen && (
