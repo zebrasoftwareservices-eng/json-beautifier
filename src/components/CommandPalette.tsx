@@ -57,16 +57,22 @@ export function CommandPalette({
 
   const recent = useMemo(() => loadRecent(), []);
 
-  const filtered = useMemo(() => {
+  const { filtered, recentCount } = useMemo(() => {
     const available = commands.filter((c) => !c.disabled);
     if (!query) {
       const recentCmds = recent
         .map((id) => available.find((c) => c.id === id))
         .filter(Boolean) as PaletteCommand[];
       const rest = available.filter((c) => !recent.includes(c.id));
-      return [...recentCmds, ...rest];
+      return {
+        filtered: [...recentCmds, ...rest],
+        recentCount: recentCmds.length,
+      };
     }
-    return available.filter((c) => fuzzyMatch(c.label, query));
+    return {
+      filtered: available.filter((c) => fuzzyMatch(c.label, query)),
+      recentCount: 0,
+    };
   }, [commands, query, recent]);
 
   // Focus the input on mount (palette is remounted on each open via key prop)
@@ -156,7 +162,7 @@ export function CommandPalette({
               id={`palette-item-${cmd.id}`}
               role="option"
               aria-selected={i === activeIdx}
-              className={`palette-item${i === activeIdx ? " palette-item--active" : ""}${i < recent.length && !query ? " palette-item--recent" : ""}`}
+              className={`palette-item${i === activeIdx ? " palette-item--active" : ""}${i < recentCount ? " palette-item--recent" : ""}`}
               onMouseEnter={() => setActiveIdx(i)}
               onClick={() => execute(cmd)}
             >
@@ -165,12 +171,7 @@ export function CommandPalette({
             </li>
           ))}
         </ul>
-        {!query && recent.length > 0 && filtered.length > 0 && (
-          <div className="palette-hint">
-            ↑↓ navigate · Enter select · Esc close
-          </div>
-        )}
-        {(query || recent.length === 0) && (
+        {filtered.length > 0 && (
           <div className="palette-hint">
             ↑↓ navigate · Enter select · Esc close
           </div>

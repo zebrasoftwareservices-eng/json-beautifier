@@ -209,7 +209,7 @@ export function ActionBar({
           className="secondary"
           onClick={onOpenPalette}
         >
-          ⌘K
+          {SC.palette}
         </DwellButton>
       </div>
     </div>

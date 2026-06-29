@@ -297,7 +297,7 @@ export function TreeView({ json }: TreeViewProps) {
   // Listen for keyboard shortcut events dispatched from App
   useEffect(() => {
     function onCollapseAll() {
-      setExpanded(new Set());
+      setExpanded(new Set(["$"]));
     }
     function onFocusSearch() {
       searchInputRef.current?.focus();

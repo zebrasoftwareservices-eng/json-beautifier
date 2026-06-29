@@ -485,6 +485,9 @@ export default function App() {
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (!(e.metaKey || e.ctrlKey)) return;
+      const allowedWhileProcessing =
+        !e.shiftKey && (e.key === "k" || e.key === "/" || e.key === "f");
+      if (processing && !allowedWhileProcessing) return;
       if (e.shiftKey) {
         switch (e.key) {
           case "F":
@@ -553,6 +556,7 @@ export default function App() {
     handleCopy,
     handleDownload,
     handleClear,
+    processing,
   ]);
 
   // Clear stale repair result whenever the editor content changes
@@ -599,37 +603,42 @@ export default function App() {
         label: "Format JSON",
         shortcut: `${m}${s}F`,
         action: () => handleFormat(),
+        disabled: processing,
       },
       {
         id: "minify",
         label: "Minify JSON",
         shortcut: `${m}${s}M`,
         action: handleMinify,
+        disabled: processing,
       },
       {
         id: "validate",
         label: "Validate JSON",
         shortcut: `${m}${s}V`,
         action: () => handleValidate(),
+        disabled: processing,
       },
       {
         id: "repair",
         label: "Repair JSON",
         shortcut: `${m}${s}R`,
         action: handleRepair,
-        disabled: validationStatus !== "invalid",
+        disabled: processing || validationStatus !== "invalid",
       },
       {
         id: "copy",
         label: "Copy Output",
         shortcut: `${m}${s}C`,
         action: handleCopy,
+        disabled: processing,
       },
       {
         id: "download",
         label: "Download JSON",
         shortcut: `${m}S`,
         action: handleDownload,
+        disabled: processing,
       },
       {
         id: "load-url",
@@ -661,6 +670,7 @@ export default function App() {
         label: "Clear Editor",
         shortcut: isMac ? `${m}${s}⌫` : `${m}${s}Del`,
         action: handleClear,
+        disabled: processing,
       },
     ],
     [
@@ -672,6 +682,7 @@ export default function App() {
       handleDownload,
       handleClear,
       validationStatus,
+      processing,
     ],
   );
 
@@ -694,8 +705,8 @@ export default function App() {
           : `✗ Invalid JSON: ${error.message}`
         : [
             sizeLabel
-              ? `Ready · ${sizeLabel} — ⌘K for commands`
-              : "Ready — ⌘K for commands",
+              ? `Ready · ${sizeLabel} — ${m}K for commands`
+              : `Ready — ${m}K for commands`,
             bigintNote,
           ]
             .filter(Boolean)

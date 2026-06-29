@@ -844,7 +844,7 @@ mark.tree-match {
   bottom: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%);
-  background: #1f2440;
+  background: #1a1e2e;
   border: 1px solid #2d3250;
   border-radius: 6px;
   padding: 5px 9px;
