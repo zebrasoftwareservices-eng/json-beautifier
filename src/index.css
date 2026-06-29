@@ -31,6 +31,16 @@
   --shadow:
     rgba(0, 0, 0, 0.08) 0 4px 12px -2px, rgba(0, 0, 0, 0.04) 0 2px 4px -1px;
 
+  /* Toolbar button design tokens (JSO-27) */
+  --surface-0: var(--surface-base);
+  --surface-1: var(--surface-elevated);
+  --border-strong: #c8cfe0;
+  --radius: 8px;
+  --toolbar-icon-format: #818cf8;
+  --toolbar-icon-validate: #34d399;
+  --toolbar-icon-export: #60a5fa;
+  --toolbar-icon-clear: #f87171;
+
   /* Legacy aliases (keep components working during migration) */
   --bg: var(--surface-panel);
   --text-h: var(--text-primary);
@@ -74,6 +84,9 @@
     --social-bg: rgba(30, 37, 53, 0.6);
     --shadow:
       rgba(0, 0, 0, 0.4) 0 8px 20px -4px, rgba(0, 0, 0, 0.25) 0 3px 6px -1px;
+
+    /* Toolbar button design tokens (JSO-27) — dark overrides */
+    --border-strong: #3a4558;
 
     /* Legacy aliases */
     --bg: var(--surface-panel);

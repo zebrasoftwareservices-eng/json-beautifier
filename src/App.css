@@ -133,6 +133,47 @@ button.primary-btn {
   font-weight: 600;
 }
 
+/* ── Toolbar icon-accent ghost buttons (JSO-27) ── */
+button.toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: var(--radius);
+  border: 0.5px solid var(--border);
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
+button.toolbar-btn:hover:not(:disabled) {
+  opacity: 1;
+  background: var(--surface-0);
+  border-color: var(--border-strong);
+}
+
+button.toolbar-btn .toolbar-btn__icon {
+  flex-shrink: 0;
+}
+
+button.toolbar-btn--format .toolbar-btn__icon {
+  color: var(--toolbar-icon-format);
+}
+button.toolbar-btn--validate .toolbar-btn__icon {
+  color: var(--toolbar-icon-validate);
+}
+button.toolbar-btn--export .toolbar-btn__icon {
+  color: var(--toolbar-icon-export);
+}
+button.toolbar-btn--clear .toolbar-btn__icon {
+  color: var(--toolbar-icon-clear);
+}
+
 /* ── Error banner ── */
 .error-banner {
   background: var(--error-bg);

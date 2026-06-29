@@ -1,3 +1,9 @@
+import {
+  IconBolt,
+  IconCheck,
+  IconDownload,
+  IconTrash,
+} from "@tabler/icons-react";
 import { DwellButton } from "./DwellButton";
 
 const SAMPLE_JSON = JSON.stringify(
@@ -142,9 +148,10 @@ export function ActionBar({
           tooltip="Format JSON"
           shortcut={SC.format}
           disabled={processing}
-          className="primary-btn"
+          className="toolbar-btn toolbar-btn--format"
           onClick={onFormat}
         >
+          <IconBolt size={15} className="toolbar-btn__icon" aria-hidden />
           {processing ? "Working…" : "Format"}
         </DwellButton>
         <DwellButton
@@ -167,10 +174,11 @@ export function ActionBar({
         <DwellButton
           tooltip="Validate JSON"
           shortcut={SC.validate}
-          className="secondary"
+          className="toolbar-btn toolbar-btn--validate"
           disabled={processing}
           onClick={onValidate}
         >
+          <IconCheck size={15} className="toolbar-btn__icon" aria-hidden />
           Validate
         </DwellButton>
         <DwellButton
@@ -200,10 +208,11 @@ export function ActionBar({
         <DwellButton
           tooltip="Download JSON"
           shortcut={SC.download}
-          className="secondary"
+          className="toolbar-btn toolbar-btn--export"
           disabled={processing}
           onClick={onDownload}
         >
+          <IconDownload size={15} className="toolbar-btn__icon" aria-hidden />
           Download
         </DwellButton>
         <button className="secondary" disabled title="Share — coming soon">
@@ -212,10 +221,11 @@ export function ActionBar({
         <DwellButton
           tooltip="Clear editor"
           shortcut={SC.clear}
-          className="secondary"
+          className="toolbar-btn toolbar-btn--clear"
           disabled={processing}
           onClick={onClear}
         >
+          <IconTrash size={15} className="toolbar-btn__icon" aria-hidden />
           Clear
         </DwellButton>
       </div>
