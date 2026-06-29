@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import "./App.css";
 import { useJsonWorker } from "./worker/useJsonWorker";
 import { CodeEditor, type CodeEditorError } from "./components/CodeEditor";
@@ -6,10 +6,19 @@ import { SplitPane } from "./components/SplitPane";
 import { ActionBar, SAMPLE_JSON } from "./components/ActionBar";
 import { LoadUrlDialog } from "./components/LoadUrlDialog";
 import {
+  CommandPalette,
+  type PaletteCommand,
+} from "./components/CommandPalette";
+import {
   RightPane,
   type TabId,
   type RepairResult,
 } from "./components/RightPane";
+
+const isMac =
+  typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
+const m = isMac ? "⌘" : "Ctrl+";
+const s = isMac ? "⇧" : "Shift+";
 
 const INSTANT_LIMIT = 5 * 1_000_000; // 5 MB — read without progress indicator
 const MAX_FILE_BYTES = 25 * 1_000_000; // 25 MB — hard limit
@@ -54,6 +63,8 @@ export default function App() {
   const [urlDialogOpen, setUrlDialogOpen] = useState(false);
   const [loadingUrl, setLoadingUrl] = useState(false);
   const [hasLargeIntegers, setHasLargeIntegers] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [paletteKey, setPaletteKey] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const latestLoadIdRef = useRef(0);
@@ -470,22 +481,83 @@ export default function App() {
     [autoFormat, handleFormat],
   );
 
-  // Keyboard shortcuts: Cmd/Ctrl+Shift+F → Format, Cmd/Ctrl+Shift+V → Validate
+  // Keyboard shortcuts
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (e.metaKey || e.ctrlKey) {
-        if (e.shiftKey && e.key === "F") {
-          e.preventDefault();
-          handleFormat();
-        } else if (e.shiftKey && e.key === "V") {
-          e.preventDefault();
-          handleValidate();
+      if (!(e.metaKey || e.ctrlKey)) return;
+      const allowedWhileProcessing =
+        !e.shiftKey && (e.key === "k" || e.key === "/" || e.key === "f");
+      if (processing && !allowedWhileProcessing) return;
+      if (e.shiftKey) {
+        switch (e.key) {
+          case "F":
+            e.preventDefault();
+            handleFormat();
+            break;
+          case "M":
+            e.preventDefault();
+            handleMinify();
+            break;
+          case "V":
+            e.preventDefault();
+            handleValidate();
+            break;
+          case "R":
+            e.preventDefault();
+            handleRepair();
+            break;
+          case "C":
+            e.preventDefault();
+            handleCopy();
+            break;
+          case "U":
+            e.preventDefault();
+            setUrlDialogOpen(true);
+            break;
+          case "Delete":
+          case "Backspace":
+            e.preventDefault();
+            handleClear();
+            break;
+        }
+      } else {
+        switch (e.key) {
+          case "k":
+            e.preventDefault();
+            setPaletteOpen(true);
+            setPaletteKey((k) => k + 1);
+            break;
+          case "s":
+            e.preventDefault();
+            handleDownload();
+            break;
+          case "/":
+            e.preventDefault();
+            window.dispatchEvent(new CustomEvent("tree:collapse-all"));
+            break;
+          case "f":
+            e.preventDefault();
+            setActiveTab("tree");
+            setTimeout(
+              () => window.dispatchEvent(new CustomEvent("tree:focus-search")),
+              50,
+            );
+            break;
         }
       }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [handleFormat, handleValidate]);
+  }, [
+    handleFormat,
+    handleMinify,
+    handleValidate,
+    handleRepair,
+    handleCopy,
+    handleDownload,
+    handleClear,
+    processing,
+  ]);
 
   // Clear stale repair result whenever the editor content changes
   useEffect(() => {
@@ -524,6 +596,96 @@ export default function App() {
     ? "⚠ Large integers — precision preserved"
     : null;
 
+  const paletteCmds = useMemo<PaletteCommand[]>(
+    () => [
+      {
+        id: "format",
+        label: "Format JSON",
+        shortcut: `${m}${s}F`,
+        action: () => handleFormat(),
+        disabled: processing,
+      },
+      {
+        id: "minify",
+        label: "Minify JSON",
+        shortcut: `${m}${s}M`,
+        action: handleMinify,
+        disabled: processing,
+      },
+      {
+        id: "validate",
+        label: "Validate JSON",
+        shortcut: `${m}${s}V`,
+        action: () => handleValidate(),
+        disabled: processing,
+      },
+      {
+        id: "repair",
+        label: "Repair JSON",
+        shortcut: `${m}${s}R`,
+        action: handleRepair,
+        disabled: processing || validationStatus !== "invalid",
+      },
+      {
+        id: "copy",
+        label: "Copy Output",
+        shortcut: `${m}${s}C`,
+        action: handleCopy,
+        disabled: processing,
+      },
+      {
+        id: "download",
+        label: "Download JSON",
+        shortcut: `${m}S`,
+        action: handleDownload,
+        disabled: processing,
+      },
+      {
+        id: "load-url",
+        label: "Load from URL",
+        shortcut: `${m}${s}U`,
+        action: () => setUrlDialogOpen(true),
+      },
+      {
+        id: "search",
+        label: "Search in JSON",
+        shortcut: `${m}F`,
+        action: () => {
+          setActiveTab("tree");
+          setTimeout(
+            () => window.dispatchEvent(new CustomEvent("tree:focus-search")),
+            50,
+          );
+        },
+      },
+      {
+        id: "collapse",
+        label: "Collapse All Nodes",
+        shortcut: `${m}/`,
+        action: () =>
+          window.dispatchEvent(new CustomEvent("tree:collapse-all")),
+      },
+      {
+        id: "clear",
+        label: "Clear Editor",
+        shortcut: isMac ? `${m}${s}⌫` : `${m}${s}Del`,
+        action: handleClear,
+        disabled: processing,
+      },
+    ],
+    [
+      handleFormat,
+      handleMinify,
+      handleValidate,
+      handleRepair,
+      handleCopy,
+      handleDownload,
+      handleClear,
+      validationStatus,
+      processing,
+    ],
+  );
+
   const statusText = processing
     ? `Processing… · Web Worker`
     : validationStatus === "valid" && nodeCount !== null && parseTimeMs !== null
@@ -543,8 +705,8 @@ export default function App() {
           : `✗ Invalid JSON: ${error.message}`
         : [
             sizeLabel
-              ? `Ready · ${sizeLabel} — ⌘⇧F to format · ⌘⇧V to validate`
-              : "Ready — ⌘⇧F to format · ⌘⇧V to validate",
+              ? `Ready · ${sizeLabel} — ${m}K for commands`
+              : `Ready — ${m}K for commands`,
             bigintNote,
           ]
             .filter(Boolean)
@@ -571,6 +733,7 @@ export default function App() {
         onIndentChange={setIndent}
         onFormat={() => handleFormat()}
         onMinify={handleMinify}
+        onValidate={() => handleValidate()}
         onClear={handleClear}
         onCopy={handleCopy}
         onDownload={handleDownload}
@@ -579,6 +742,10 @@ export default function App() {
         onUpload={handleUploadClick}
         onLoadUrl={() => setUrlDialogOpen(true)}
         onRepair={handleRepair}
+        onOpenPalette={() => {
+          setPaletteOpen(true);
+          setPaletteKey((k) => k + 1);
+        }}
         processing={processing}
         copyLabel={copyLabel}
         autoFormat={autoFormat}
@@ -656,6 +823,13 @@ export default function App() {
           loading={loadingUrl}
         />
       )}
+
+      <CommandPalette
+        key={paletteKey}
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        commands={paletteCmds}
+      />
     </div>
   );
 }

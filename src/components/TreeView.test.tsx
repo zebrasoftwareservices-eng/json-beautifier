@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { TreeView } from "./TreeView";
@@ -292,5 +292,41 @@ describe("clipboard — copy path", () => {
     fireEvent.click(screen.getByTitle("Copy JSONPath"));
 
     expect(writeTextMock).toHaveBeenCalledWith(expect.stringMatching(/^\$\./));
+  });
+});
+
+// ── 15. Custom event: tree:collapse-all ──────────────────────────────────────
+
+describe("custom event — tree:collapse-all", () => {
+  it("collapses all expanded nodes when tree:collapse-all is dispatched", async () => {
+    const user = userEvent.setup();
+    render(<TreeView json={NESTED_OBJECT} />);
+
+    // Expand all so nested children (city) are visible
+    await user.click(screen.getByTitle("Expand all"));
+    expect(screen.getByText(/city/)).toBeInTheDocument();
+
+    // Dispatch the custom event
+    act(() => {
+      window.dispatchEvent(new CustomEvent("tree:collapse-all"));
+    });
+
+    // Nested grandchildren should no longer be visible
+    expect(screen.queryByText(/city/)).not.toBeInTheDocument();
+  });
+});
+
+// ── 16. Custom event: tree:focus-search ──────────────────────────────────────
+
+describe("custom event — tree:focus-search", () => {
+  it("focuses the search input when tree:focus-search is dispatched", () => {
+    render(<TreeView json={SIMPLE_OBJECT} />);
+    const searchInput = screen.getByRole("searchbox", { name: /search tree/i });
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent("tree:focus-search"));
+    });
+
+    expect(document.activeElement).toBe(searchInput);
   });
 });

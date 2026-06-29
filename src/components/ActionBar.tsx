@@ -1,3 +1,5 @@
+import { DwellButton } from "./DwellButton";
+
 const SAMPLE_JSON = JSON.stringify(
   {
     name: "Alice",
@@ -9,11 +11,29 @@ const SAMPLE_JSON = JSON.stringify(
   2,
 );
 
+const isMac =
+  typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
+const m = isMac ? "⌘" : "Ctrl+";
+const s = isMac ? "⇧" : "Shift+";
+
+const SC = {
+  format: `${m}${s}F`,
+  minify: `${m}${s}M`,
+  validate: `${m}${s}V`,
+  repair: `${m}${s}R`,
+  copy: `${m}${s}C`,
+  download: `${m}S`,
+  loadUrl: `${m}${s}U`,
+  clear: isMac ? `${m}${s}⌫` : `${m}${s}Del`,
+  palette: `${m}K`,
+};
+
 interface ActionBarProps {
   indent: number;
   onIndentChange: (n: number) => void;
   onFormat: () => void;
   onMinify: () => void;
+  onValidate: () => void;
   onClear: () => void;
   onCopy: () => void;
   onDownload: () => void;
@@ -22,6 +42,7 @@ interface ActionBarProps {
   onUpload: () => void;
   onLoadUrl: () => void;
   onRepair: () => void;
+  onOpenPalette: () => void;
   processing: boolean;
   copyLabel?: string;
   autoFormat?: boolean;
@@ -34,6 +55,7 @@ export function ActionBar({
   onIndentChange,
   onFormat,
   onMinify,
+  onValidate,
   onClear,
   onCopy,
   onDownload,
@@ -42,6 +64,7 @@ export function ActionBar({
   onUpload,
   onLoadUrl,
   onRepair,
+  onOpenPalette,
   processing,
   copyLabel = "Copy",
   autoFormat = true,
@@ -51,32 +74,38 @@ export function ActionBar({
   return (
     <div className="action-bar">
       <div className="action-group">
-        <button
-          onClick={onPaste}
+        <DwellButton
+          tooltip="Paste from clipboard"
           disabled={processing}
-          title="Paste from clipboard"
+          onClick={onPaste}
         >
           Paste
-        </button>
-        <button
+        </DwellButton>
+        <DwellButton
+          tooltip="Upload file"
           className="secondary"
-          onClick={onUpload}
           disabled={processing}
-          title="Upload .json, .txt, or .jsonl file"
+          onClick={onUpload}
         >
           Upload
-        </button>
-        <button
+        </DwellButton>
+        <DwellButton
+          tooltip="Load from URL"
+          shortcut={SC.loadUrl}
           className="secondary"
-          onClick={onLoadUrl}
           disabled={processing}
-          title="Load JSON from a URL"
+          onClick={onLoadUrl}
         >
           Load URL
-        </button>
-        <button className="secondary" onClick={onSample} disabled={processing}>
+        </DwellButton>
+        <DwellButton
+          tooltip="Load sample JSON"
+          className="secondary"
+          disabled={processing}
+          onClick={onSample}
+        >
           Sample
-        </button>
+        </DwellButton>
       </div>
 
       <div className="action-group">
@@ -91,16 +120,23 @@ export function ActionBar({
             <option value={4}>4 spaces</option>
           </select>
         </label>
-        <button
-          onClick={onFormat}
+        <DwellButton
+          tooltip="Format JSON"
+          shortcut={SC.format}
           disabled={processing}
           className="primary-btn"
+          onClick={onFormat}
         >
           {processing ? "Working…" : "Format"}
-        </button>
-        <button onClick={onMinify} disabled={processing}>
+        </DwellButton>
+        <DwellButton
+          tooltip="Minify JSON"
+          shortcut={SC.minify}
+          disabled={processing}
+          onClick={onMinify}
+        >
           Minify
-        </button>
+        </DwellButton>
         <label className="auto-format-label" title="Auto-format on paste">
           <input
             type="checkbox"
@@ -110,41 +146,71 @@ export function ActionBar({
           />
           Auto
         </label>
-        <button className="secondary" disabled title="Validate — coming soon">
-          Validate
-        </button>
-        <button
+        <DwellButton
+          tooltip="Validate JSON"
+          shortcut={SC.validate}
           className="secondary"
-          onClick={onRepair}
-          disabled={processing || !repairEnabled}
-          title={
+          disabled={processing}
+          onClick={onValidate}
+        >
+          Validate
+        </DwellButton>
+        <DwellButton
+          tooltip={
             repairEnabled
-              ? "Auto-repair common JSON issues"
+              ? "Auto-repair JSON issues"
               : "Repair — available when JSON is invalid"
           }
+          shortcut={repairEnabled ? SC.repair : undefined}
+          className="secondary"
+          disabled={processing || !repairEnabled}
+          onClick={onRepair}
         >
           Repair
-        </button>
+        </DwellButton>
       </div>
 
       <div className="action-group">
-        <button onClick={onCopy} disabled={processing}>
-          {copyLabel}
-        </button>
-        <button
-          className="secondary"
-          onClick={onDownload}
+        <DwellButton
+          tooltip="Copy output"
+          shortcut={SC.copy}
           disabled={processing}
-          title="Download formatted JSON as a file"
+          onClick={onCopy}
+        >
+          {copyLabel}
+        </DwellButton>
+        <DwellButton
+          tooltip="Download JSON"
+          shortcut={SC.download}
+          className="secondary"
+          disabled={processing}
+          onClick={onDownload}
         >
           Download
-        </button>
+        </DwellButton>
         <button className="secondary" disabled title="Share — coming soon">
           Share
         </button>
-        <button className="secondary" onClick={onClear} disabled={processing}>
+        <DwellButton
+          tooltip="Clear editor"
+          shortcut={SC.clear}
+          className="secondary"
+          disabled={processing}
+          onClick={onClear}
+        >
           Clear
-        </button>
+        </DwellButton>
+      </div>
+
+      <div className="action-group">
+        <DwellButton
+          tooltip="Command palette"
+          shortcut={SC.palette}
+          className="secondary"
+          onClick={onOpenPalette}
+        >
+          {SC.palette}
+        </DwellButton>
       </div>
     </div>
   );
