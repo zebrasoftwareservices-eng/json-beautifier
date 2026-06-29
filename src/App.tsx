@@ -45,14 +45,18 @@ function readFileAsText(
   });
 }
 
-export default function App() {
+interface AppProps {
+  initialTab?: TabId;
+}
+
+export default function App({ initialTab = "tree" }: AppProps) {
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
   const [error, setError] = useState<CodeEditorError | null>(null);
   const [indent, setIndent] = useState(2);
   const [parseTimeMs, setParseTimeMs] = useState<number | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabId>("tree");
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
   const [copyLabel, setCopyLabel] = useState("Copy");
   const [autoFormat, setAutoFormat] = useState(true);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -72,6 +76,7 @@ export default function App() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const latestLoadIdRef = useRef(0);
+  const latestValidateIdRef = useRef(0);
   const { process } = useJsonWorker();
   const autoFormatTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const validateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -356,7 +361,11 @@ export default function App() {
   }
 
   function handleAcceptRepair(text: string) {
+    latestValidateIdRef.current += 1;
     setInput(text);
+    setPartialJson(null);
+    setValidationStatus("idle");
+    setError(null);
     setRepairResult(null);
     setActiveTab("tree");
   }
@@ -442,16 +451,24 @@ export default function App() {
   }
 
   const handleValidate = useCallback(
-    async (content?: string) => {
+    async (content?: string, switchTab = false) => {
+      if (switchTab && validateTimerRef.current) {
+        clearTimeout(validateTimerRef.current);
+        validateTimerRef.current = null;
+      }
       const toValidate = content ?? input;
+      const validateId = ++latestValidateIdRef.current;
       if (!toValidate.trim()) {
         setValidationStatus("idle");
         setNodeCount(null);
+        setParseTimeMs(null);
+        setHasLargeIntegers(false);
         setError(null);
         setPartialJson(null);
         return;
       }
       const result = await process("validate", toValidate);
+      if (validateId !== latestValidateIdRef.current) return; // discard stale
       if (result.ok) {
         setError(null);
         setNodeCount(result.nodeCount ?? null);
@@ -475,7 +492,7 @@ export default function App() {
         setParseTimeMs(null);
         setHasLargeIntegers(false);
         setValidationStatus("invalid");
-        setActiveTab("error");
+        if (switchTab) setActiveTab("error");
         // Attempt tolerant parse for partial tree display
         const repaired = repairJson(toValidate);
         setPartialJson(repaired.ok ? repaired.result : null);
@@ -526,7 +543,7 @@ export default function App() {
             break;
           case "V":
             e.preventDefault();
-            handleValidate();
+            handleValidate(undefined, true);
             break;
           case "R":
             e.preventDefault();
@@ -642,7 +659,7 @@ export default function App() {
         id: "validate",
         label: "Validate JSON",
         shortcut: `${m}${s}V`,
-        action: () => handleValidate(),
+        action: () => handleValidate(undefined, true),
         disabled: processing,
       },
       {
@@ -759,7 +776,7 @@ export default function App() {
         onIndentChange={setIndent}
         onFormat={() => handleFormat()}
         onMinify={handleMinify}
-        onValidate={() => handleValidate()}
+        onValidate={() => handleValidate(undefined, true)}
         onClear={handleClear}
         onCopy={handleCopy}
         onDownload={handleDownload}

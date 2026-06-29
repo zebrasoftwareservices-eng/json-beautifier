@@ -66,13 +66,12 @@ describe("getSuggestion", () => {
     expect(result).toContain("Infinity");
   });
 
-  // 10. Missing comma between items (multi-line) — may return null (lowest priority)
-  it("returns a comma-related suggestion or null for missing comma between items", () => {
+  // 10. Missing comma between items (multi-line)
+  it("returns a comma-related suggestion for missing comma between items", () => {
     const input = '{\n  "a": 1\n  "b": 2\n}';
     const result = getSuggestion(input, "");
-    if (result !== null) {
-      expect(result.toLowerCase()).toContain("comma");
-    }
+    expect(result).not.toBeNull();
+    expect(result!.toLowerCase()).toContain("comma");
   });
 
   // 11. Valid JSON returns null
@@ -89,9 +88,8 @@ describe("getSuggestion", () => {
   it("includes the _line number when missing-comma fires with _line=5", () => {
     const input = '{\n  "a": 1\n  "b": 2\n}';
     const result = getSuggestion(input, "", 5);
-    if (result !== null) {
-      expect(result).toContain("5");
-    }
+    expect(result).not.toBeNull();
+    expect(result!).toContain("5");
   });
 
   // Additional edge cases
@@ -130,5 +128,15 @@ describe("getSuggestion", () => {
 
   it("handles special unicode characters in valid JSON", () => {
     expect(getSuggestion('{"emoji":"\\u2764\\uFE0F"}', "")).toBeNull();
+  });
+
+  // String-value masking: URLs inside string values should not trigger comment heuristic
+  it("does not flag a URL inside a string value as a comment", () => {
+    expect(getSuggestion('{"url":"https://example.com/path"}', "")).toBeNull();
+  });
+
+  // String-value masking: single quote inside a double-quoted string is not flagged
+  it("does not flag a single quote inside a string value", () => {
+    expect(getSuggestion('{"msg":"it\'s fine"}', "")).toBeNull();
   });
 });
