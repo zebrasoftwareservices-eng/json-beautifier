@@ -1,0 +1,143 @@
+.tool-landing {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+  background: var(--surface-base);
+  font-family: var(--sans);
+}
+
+/* ── Header ── */
+.tool-landing__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: var(--surface-elevated);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.tool-landing__back {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tool-landing__back:hover {
+  color: var(--text-primary);
+}
+
+.tool-landing__sep {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.tool-landing__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ── Embedded tool panel ── */
+.tool-landing__tool {
+  height: calc(100svh - 37px - 1px);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── SEO content below the fold ── */
+.tool-landing__content {
+  background: var(--surface-panel);
+  border-top: 1px solid var(--border);
+  padding: 64px 24px;
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.tool-landing__content h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 48px 0 16px;
+  font-family: var(--sans);
+}
+
+.tool-landing__content h2:first-child {
+  margin-top: 0;
+}
+
+.tool-landing__content p {
+  margin: 0 0 16px;
+}
+
+.tool-landing__content ul {
+  margin: 0 0 16px;
+  padding-left: 24px;
+}
+
+.tool-landing__content ul li {
+  margin-bottom: 8px;
+}
+
+/* ── FAQ section ── */
+.tool-landing__faq {
+  margin-top: 0;
+}
+
+.tool-landing__faq-item {
+  border-bottom: 1px solid var(--border);
+  padding: 20px 0;
+}
+
+.tool-landing__faq-item:last-child {
+  border-bottom: none;
+}
+
+.tool-landing__faq-q {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 8px;
+  font-family: var(--sans);
+}
+
+.tool-landing__faq-a {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+/* ── Related tools ── */
+.tool-landing__related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.tool-landing__related-link {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-elevated);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition:
+    border-color 0.12s,
+    color 0.12s;
+}
+
+.tool-landing__related-link:hover {
+  border-color: var(--accent-border);
+  color: var(--accent);
+}

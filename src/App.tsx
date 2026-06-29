@@ -45,14 +45,18 @@ function readFileAsText(
   });
 }
 
-export default function App() {
+interface AppProps {
+  initialTab?: TabId;
+}
+
+export default function App({ initialTab = "tree" }: AppProps) {
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
   const [error, setError] = useState<CodeEditorError | null>(null);
   const [indent, setIndent] = useState(2);
   const [parseTimeMs, setParseTimeMs] = useState<number | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabId>("tree");
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
   const [copyLabel, setCopyLabel] = useState("Copy");
   const [autoFormat, setAutoFormat] = useState(true);
   const [fileName, setFileName] = useState<string | null>(null);
