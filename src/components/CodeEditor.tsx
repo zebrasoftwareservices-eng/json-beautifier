@@ -54,6 +54,10 @@ export function CodeEditor({
   useEffect(() => {
     if (!containerRef.current) return;
 
+    const prefersDark =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches;
+
     const extensions = [
       lineNumbers(),
       highlightActiveLine(),
@@ -65,7 +69,7 @@ export function CodeEditor({
       bracketMatching(),
       closeBrackets(),
       json(),
-      oneDark,
+      ...(prefersDark ? [oneDark] : []),
       linter(() => []),
       keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap]),
       EditorView.updateListener.of((update) => {
@@ -86,8 +90,20 @@ export function CodeEditor({
         },
       }),
       EditorView.theme({
-        "&": { height: "100%", fontSize: "13px" },
-        ".cm-scroller": { overflow: "auto", fontFamily: "var(--mono)" },
+        "&": {
+          height: "100%",
+          fontSize: "13px",
+          background: "var(--surface-panel)",
+        },
+        ".cm-gutters": {
+          background: "var(--surface-panel)",
+          borderRight: "1px solid var(--border)",
+        },
+        ".cm-scroller": {
+          overflow: "auto",
+          fontFamily: "var(--mono)",
+          letterSpacing: "0",
+        },
         ".cm-content": { padding: "12px 0" },
         "&.cm-focused": { outline: "none" },
       }),
