@@ -72,6 +72,7 @@ export default function App() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const latestLoadIdRef = useRef(0);
+  const latestValidateIdRef = useRef(0);
   const { process } = useJsonWorker();
   const autoFormatTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const validateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -357,6 +358,9 @@ export default function App() {
 
   function handleAcceptRepair(text: string) {
     setInput(text);
+    setPartialJson(null);
+    setValidationStatus("idle");
+    setError(null);
     setRepairResult(null);
     setActiveTab("tree");
   }
@@ -442,8 +446,9 @@ export default function App() {
   }
 
   const handleValidate = useCallback(
-    async (content?: string) => {
+    async (content?: string, switchTab = false) => {
       const toValidate = content ?? input;
+      const validateId = ++latestValidateIdRef.current;
       if (!toValidate.trim()) {
         setValidationStatus("idle");
         setNodeCount(null);
@@ -452,6 +457,7 @@ export default function App() {
         return;
       }
       const result = await process("validate", toValidate);
+      if (validateId !== latestValidateIdRef.current) return; // discard stale
       if (result.ok) {
         setError(null);
         setNodeCount(result.nodeCount ?? null);
@@ -475,7 +481,7 @@ export default function App() {
         setParseTimeMs(null);
         setHasLargeIntegers(false);
         setValidationStatus("invalid");
-        setActiveTab("error");
+        if (switchTab) setActiveTab("error");
         // Attempt tolerant parse for partial tree display
         const repaired = repairJson(toValidate);
         setPartialJson(repaired.ok ? repaired.result : null);
@@ -526,7 +532,7 @@ export default function App() {
             break;
           case "V":
             e.preventDefault();
-            handleValidate();
+            handleValidate(undefined, true);
             break;
           case "R":
             e.preventDefault();
@@ -642,7 +648,7 @@ export default function App() {
         id: "validate",
         label: "Validate JSON",
         shortcut: `${m}${s}V`,
-        action: () => handleValidate(),
+        action: () => handleValidate(undefined, true),
         disabled: processing,
       },
       {
@@ -759,7 +765,7 @@ export default function App() {
         onIndentChange={setIndent}
         onFormat={() => handleFormat()}
         onMinify={handleMinify}
-        onValidate={() => handleValidate()}
+        onValidate={() => handleValidate(undefined, true)}
         onClear={handleClear}
         onCopy={handleCopy}
         onDownload={handleDownload}
