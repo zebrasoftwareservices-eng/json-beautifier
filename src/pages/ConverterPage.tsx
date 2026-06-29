@@ -44,6 +44,8 @@ export function ConverterPage({ format }: ConverterPageProps) {
   const runConvert = useCallback(
     async (json: string, fmt: Format) => {
       if (!json.trim()) {
+        seqRef.current += 1;
+        setProcessing(false);
         setOutput("");
         setError(null);
         setStatusText("Ready");
