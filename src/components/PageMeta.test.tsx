@@ -151,8 +151,7 @@ describe("PageMeta — JSON-LD FAQPage", () => {
     expect(data.mainEntity[0].name).toBe('Can I use <script> & "quotes"?');
   });
 
-  it("JSON-LD handles an empty faq array — no script injected", () => {
-    // Empty array is falsy check: faq=[] is truthy so script IS injected but mainEntity is empty
+  it("JSON-LD script is injected with empty mainEntity when faq is an empty array", () => {
     renderPageMeta({
       title: "Title",
       description: "desc",

@@ -9,14 +9,18 @@ function stripStrings(input: string): string {
       i++;
       while (i < input.length) {
         if (input[i] === "\\") {
-          out += "  ";
-          i += 2;
+          out += " ";
+          i++;
+          if (i < input.length) {
+            out += input[i] === "\n" || input[i] === "\r" ? input[i] : " ";
+            i++;
+          }
         } else if (input[i] === '"') {
           out += '"';
           i++;
           break;
         } else {
-          out += " ";
+          out += input[i] === "\n" || input[i] === "\r" ? input[i] : " ";
           i++;
         }
       }
