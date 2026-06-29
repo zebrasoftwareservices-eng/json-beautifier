@@ -15,6 +15,8 @@ import {
   type TabId,
   type RepairResult,
 } from "./components/RightPane";
+import { repairJson } from "./worker/jsonRepair";
+import { getSuggestion } from "./worker/errorSuggestions";
 
 const isMac =
   typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
@@ -61,6 +63,7 @@ export default function App() {
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [repairResult, setRepairResult] = useState<RepairResult | null>(null);
+  const [partialJson, setPartialJson] = useState<string | null>(null);
   const [urlDialogOpen, setUrlDialogOpen] = useState(false);
   const [loadingUrl, setLoadingUrl] = useState(false);
   const [hasLargeIntegers, setHasLargeIntegers] = useState(false);
@@ -445,6 +448,7 @@ export default function App() {
         setValidationStatus("idle");
         setNodeCount(null);
         setError(null);
+        setPartialJson(null);
         return;
       }
       const result = await process("validate", toValidate);
@@ -454,17 +458,27 @@ export default function App() {
         setParseTimeMs(result.parseTimeMs);
         setHasLargeIntegers(result.hasLargeIntegers ?? false);
         setValidationStatus("valid");
+        setPartialJson(null);
       } else {
+        const suggestion = getSuggestion(
+          toValidate,
+          result.message,
+          result.line,
+        );
         setError({
           message: result.message,
           line: result.line,
           column: result.column,
+          suggestion: suggestion ?? undefined,
         });
         setNodeCount(null);
         setParseTimeMs(null);
         setHasLargeIntegers(false);
         setValidationStatus("invalid");
         setActiveTab("error");
+        // Attempt tolerant parse for partial tree display
+        const repaired = repairJson(toValidate);
+        setPartialJson(repaired.ok ? repaired.result : null);
       }
     },
     [input, process],
@@ -826,6 +840,10 @@ export default function App() {
               input={input}
               repairResult={repairResult}
               onAcceptRepair={handleAcceptRepair}
+              partialJson={partialJson}
+              isPartialTree={
+                validationStatus === "invalid" && partialJson !== null
+              }
             />
           }
         />

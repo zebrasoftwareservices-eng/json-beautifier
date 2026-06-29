@@ -271,9 +271,10 @@ const TreeRow = memo(function TreeRow({
 
 interface TreeViewProps {
   json: string;
+  isPartial?: boolean;
 }
 
-export function TreeView({ json }: TreeViewProps) {
+export function TreeView({ json, isPartial }: TreeViewProps) {
   const { parsed, parseError } = useMemo(() => {
     if (!json.trim()) return { parsed: null, parseError: false };
     try {
@@ -413,6 +414,11 @@ export function TreeView({ json }: TreeViewProps) {
 
   return (
     <div className="tree-view">
+      {isPartial && (
+        <div className="tree-partial-banner" role="status">
+          ⚠ Showing partial tree — JSON has errors
+        </div>
+      )}
       {/* Toolbar */}
       <div className="tree-toolbar">
         <input
