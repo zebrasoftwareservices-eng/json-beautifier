@@ -31,16 +31,18 @@ export function JsonValidatorPage() {
         faq={FAQ}
       />
 
-      <header className="tool-landing__header">
-        <Link to="/" className="tool-landing__back">
-          ← JSON Beautifier
-        </Link>
-        <span className="tool-landing__sep">/</span>
-        <span className="tool-landing__title">JSON Validator</span>
-      </header>
+      <div className="tool-landing__hero">
+        <header className="tool-landing__header">
+          <Link to="/" className="tool-landing__back">
+            ← JSON Beautifier
+          </Link>
+          <span className="tool-landing__sep">/</span>
+          <h1 className="tool-landing__title">JSON Validator</h1>
+        </header>
 
-      <div className="tool-landing__tool">
-        <App initialTab="error" />
+        <div className="tool-landing__tool">
+          <App initialTab="error" />
+        </div>
       </div>
 
       <section

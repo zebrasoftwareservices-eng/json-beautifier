@@ -32,6 +32,7 @@ export function getSuggestion(
   _errorMessage: string,
   _line?: number,
 ): string | null {
+  if (input.length > 1_000_000) return null;
   const stripped = stripStrings(input);
 
   // Trailing comma before } or ]

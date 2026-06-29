@@ -1,9 +1,14 @@
 .tool-landing {
-  display: flex;
-  flex-direction: column;
-  min-height: 100svh;
+  display: block;
   background: var(--surface-base);
   font-family: var(--sans);
+}
+
+/* ── Above-the-fold hero: header + tool fill exactly one viewport ── */
+.tool-landing__hero {
+  display: flex;
+  flex-direction: column;
+  height: 100svh;
 }
 
 /* ── Header ── */
@@ -39,12 +44,13 @@
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
+  margin: 0;
 }
 
 /* ── Embedded tool panel ── */
 .tool-landing__tool {
-  height: calc(100svh - 37px - 1px);
-  flex-shrink: 0;
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;

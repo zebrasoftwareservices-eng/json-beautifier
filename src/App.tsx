@@ -361,6 +361,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
   }
 
   function handleAcceptRepair(text: string) {
+    latestValidateIdRef.current += 1;
     setInput(text);
     setPartialJson(null);
     setValidationStatus("idle");
@@ -451,11 +452,17 @@ export default function App({ initialTab = "tree" }: AppProps) {
 
   const handleValidate = useCallback(
     async (content?: string, switchTab = false) => {
+      if (switchTab && validateTimerRef.current) {
+        clearTimeout(validateTimerRef.current);
+        validateTimerRef.current = null;
+      }
       const toValidate = content ?? input;
       const validateId = ++latestValidateIdRef.current;
       if (!toValidate.trim()) {
         setValidationStatus("idle");
         setNodeCount(null);
+        setParseTimeMs(null);
+        setHasLargeIntegers(false);
         setError(null);
         setPartialJson(null);
         return;
