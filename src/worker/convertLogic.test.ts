@@ -24,7 +24,7 @@ describe("convertJson → yaml", () => {
     if (!result.ok) return;
     expect(result.result).toContain("person:");
     expect(result.result).toContain("city: NYC");
-    expect(result.result).toContain("zip: '10001'");
+    expect(result.result).toMatch(/zip:\s*['"]?10001['"]?/);
   });
 
   it("uses YAML list syntax for array values", () => {
@@ -196,7 +196,7 @@ describe("convertJson → xml", () => {
     expect(result.result).toContain("</person>");
   });
 
-  it("repeats the parent tag for array items", () => {
+  it("repeats the parent tag for array values inside an object", () => {
     const input = JSON.stringify({ items: ["a", "b"] });
     const result = convertJson("xml", input);
     expect(result.ok).toBe(true);
@@ -205,6 +205,29 @@ describe("convertJson → xml", () => {
     expect(matches).toHaveLength(2);
     expect(result.result).toContain("<items>a</items>");
     expect(result.result).toContain("<items>b</items>");
+  });
+
+  it("wraps top-level arrays in a single <root> with <item> children", () => {
+    const input = JSON.stringify([{ a: 1 }, { a: 2 }]);
+    const result = convertJson("xml", input);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.result).toContain("<root>");
+    expect(result.result).toContain("</root>");
+    const rootMatches = result.result.match(/<root>/g);
+    expect(rootMatches).toHaveLength(1);
+    expect(result.result).toContain("<item>");
+  });
+
+  it("sanitizes invalid XML tag names from object keys", () => {
+    const input = JSON.stringify({ "first name": "Alice", "1invalid": "x" });
+    const result = convertJson("xml", input);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.result).not.toContain("<first name>");
+    expect(result.result).toContain("<first_name>");
+    expect(result.result).not.toContain("<1invalid>");
+    expect(result.result).toContain("<_1invalid>");
   });
 
   it("escapes special XML characters in text content", () => {

@@ -1,4 +1,5 @@
 import { dump as yamlDump } from "js-yaml";
+import { parse as losslessParse, isSafeNumber } from "lossless-json";
 
 export type ConvertFormat = "yaml" | "csv" | "xml";
 
@@ -43,7 +44,12 @@ function flattenObject(
 }
 
 function csvCell(value: string): string {
-  if (value.includes('"') || value.includes(",") || value.includes("\n")) {
+  if (
+    value.includes('"') ||
+    value.includes(",") ||
+    value.includes("\n") ||
+    value.includes("\r")
+  ) {
     return `"${value.replace(/"/g, '""')}"`;
   }
   return value;
@@ -98,13 +104,21 @@ function escapeXml(str: string): string {
     .replace(/'/g, "&apos;");
 }
 
+function toXmlName(key: string): string {
+  // XML names must start with letter/underscore; replace invalid chars with underscore
+  return key
+    .replace(/[^a-zA-Z0-9_.\-:]/g, "_")
+    .replace(/^([^a-zA-Z_:])/, "_$1");
+}
+
 function valueToXml(value: unknown, tag: string, depth: number): string {
+  const safeTag = toXmlName(tag);
   const pad = "  ".repeat(depth);
   if (value === null || value === undefined) {
-    return `${pad}<${tag}/>\n`;
+    return `${pad}<${safeTag}/>\n`;
   }
   if (typeof value !== "object") {
-    return `${pad}<${tag}>${escapeXml(String(value))}</${tag}>\n`;
+    return `${pad}<${safeTag}>${escapeXml(String(value))}</${safeTag}>\n`;
   }
   if (Array.isArray(value)) {
     return (value as unknown[])
@@ -120,14 +134,27 @@ function valueToXml(value: unknown, tag: string, depth: number): string {
         : valueToXml(v, k, depth + 1),
     )
     .join("");
-  return `${pad}<${tag}>\n${children}${pad}</${tag}>\n`;
+  return `${pad}<${safeTag}>\n${children}${pad}</${safeTag}>\n`;
 }
 
 function toXml(parsed: unknown): ConvertResult {
   try {
     const declaration = '<?xml version="1.0" encoding="UTF-8"?>\n';
-    const result = declaration + valueToXml(parsed, "root", 0);
-    return { ok: true, result, mimeType: "application/xml", ext: "xml" };
+    let body: string;
+    if (Array.isArray(parsed)) {
+      const items = (parsed as unknown[])
+        .map((item) => valueToXml(item, "item", 1))
+        .join("");
+      body = `<root>\n${items}</root>\n`;
+    } else {
+      body = valueToXml(parsed, "root", 0);
+    }
+    return {
+      ok: true,
+      result: declaration + body,
+      mimeType: "application/xml",
+      ext: "xml",
+    };
   } catch (err) {
     return {
       ok: false,
@@ -145,7 +172,9 @@ export function convertJson(
 ): ConvertResult {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(input);
+    parsed = losslessParse(input, null, (v) =>
+      isSafeNumber(v) ? parseFloat(v) : v,
+    );
   } catch (err) {
     return {
       ok: false,

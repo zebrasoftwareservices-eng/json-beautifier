@@ -38,7 +38,7 @@ export function ConverterPage({ format }: ConverterPageProps) {
   const [processing, setProcessing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [statusText, setStatusText] = useState("Ready");
-  const inFlightRef = useRef(false);
+  const seqRef = useRef(0);
   const outputExtRef = useRef<string>(format);
 
   const runConvert = useCallback(
@@ -49,11 +49,11 @@ export function ConverterPage({ format }: ConverterPageProps) {
         setStatusText("Ready");
         return;
       }
-      if (inFlightRef.current) return;
-      inFlightRef.current = true;
+      const seq = ++seqRef.current;
       setProcessing(true);
       try {
         const result = await convert(fmt, json);
+        if (seq !== seqRef.current) return; // discard stale result
         if (result.ok) {
           setOutput(result.result);
           setError(null);
@@ -67,8 +67,7 @@ export function ConverterPage({ format }: ConverterPageProps) {
           setStatusText("Conversion failed");
         }
       } finally {
-        inFlightRef.current = false;
-        setProcessing(false);
+        if (seq === seqRef.current) setProcessing(false);
       }
     },
     [convert],
@@ -85,9 +84,13 @@ export function ConverterPage({ format }: ConverterPageProps) {
 
   async function handleCopy() {
     if (!output) return;
-    await navigator.clipboard.writeText(output);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1800);
+    try {
+      await navigator.clipboard.writeText(output);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setStatusText("Copy failed — clipboard access denied");
+    }
   }
 
   function handleDownload() {

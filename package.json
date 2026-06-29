@@ -24,8 +24,7 @@
     "lossless-json": "^4.3.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "react-router-dom": "^7.18.0",
-    "xml-js": "^1.6.11"
+    "react-router-dom": "^7.18.0"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
