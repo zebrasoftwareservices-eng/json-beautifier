@@ -17,6 +17,7 @@ import {
 } from "./components/RightPane";
 import { repairJson } from "./worker/jsonRepair";
 import { getSuggestion } from "./worker/errorSuggestions";
+import { track } from "./analytics";
 
 const isMac =
   typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
@@ -100,6 +101,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
           setHasLargeIntegers(result.hasLargeIntegers ?? false);
           setError(null);
           setActiveTab("code");
+          track.jsonFormatted();
           return true;
         } else {
           setError({
@@ -162,6 +164,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
       setOutput("");
       setParseTimeMs(null);
       setFileName(file.name);
+      track.fileUploaded();
     } catch {
       if (loadId !== latestLoadIdRef.current) return;
       setError({
@@ -282,6 +285,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
       setParseTimeMs(null);
       setFileName(url);
       setUrlDialogOpen(false);
+      track.urlLoaded();
     } catch {
       // fetch() throws TypeError on both CORS and network failures.
       // Use navigator.onLine as a heuristic to distinguish them.
@@ -345,6 +349,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
           result: result.result,
           fixes: result.fixes ?? [],
         });
+        track.jsonRepaired();
       } else {
         setRepairResult({ ok: false, message: result.message });
       }
@@ -476,6 +481,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
         setHasLargeIntegers(result.hasLargeIntegers ?? false);
         setValidationStatus("valid");
         setPartialJson(null);
+        if (switchTab) track.jsonValidated();
       } else {
         const suggestion = getSuggestion(
           toValidate,

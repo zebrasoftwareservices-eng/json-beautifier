@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useConverter } from "../hooks/useConverter";
 import { PageMeta } from "../components/PageMeta";
+import { track } from "../analytics";
 import "./ConverterPage.css";
 
 type Format = "yaml" | "csv" | "xml";
@@ -145,6 +146,7 @@ export function ConverterPage({ format }: ConverterPageProps) {
           setStatusText(
             `Converted · ${result.result.split("\n").length} lines`,
           );
+          track.converterUsed(fmt);
         } else {
           setOutput("");
           setError(result.message);
