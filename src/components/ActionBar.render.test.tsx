@@ -5,7 +5,17 @@ import { ActionBar } from "./ActionBar";
 
 // ── Mock Tabler icons — forward props so className/aria-hidden/size are covered
 
+vi.mock("../hooks/useTheme", () => ({
+  useTheme: () => ["dark", vi.fn()] as const,
+}));
+
 vi.mock("@tabler/icons-react", () => ({
+  IconMoon: (props: ComponentPropsWithoutRef<"svg">) => (
+    <svg data-testid="icon-moon" {...props} />
+  ),
+  IconSun: (props: ComponentPropsWithoutRef<"svg">) => (
+    <svg data-testid="icon-sun" {...props} />
+  ),
   IconBolt: (props: ComponentPropsWithoutRef<"svg">) => (
     <svg data-testid="icon-bolt" {...props} />
   ),

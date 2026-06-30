@@ -14,6 +14,7 @@ import {
   IconWand,
 } from "@tabler/icons-react";
 import { DwellButton } from "./DwellButton";
+import { ThemeToggle } from "./ThemeToggle";
 
 const SAMPLE_JSON = JSON.stringify(
   {
@@ -321,6 +322,7 @@ export function ActionBar({
 
       {/* ── Utility ── */}
       <div className="toolbar-zone">
+        <ThemeToggle />
         <DwellButton
           tooltip="Command palette"
           shortcut={SC.palette}
