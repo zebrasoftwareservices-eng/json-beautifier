@@ -1622,9 +1622,9 @@ describe("File name in header", () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     await waitFor(() =>
-      expect(document.querySelector("span.file-name")?.textContent).toBe(
-        "mydata.json",
-      ),
+      expect(
+        document.querySelector(".identity-bar__filename")?.textContent,
+      ).toBe("mydata.json"),
     );
   });
 
@@ -1641,13 +1641,19 @@ describe("File name in header", () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     await waitFor(() =>
-      expect(document.querySelector("span.file-name")).toBeInTheDocument(),
+      expect(
+        document.querySelector(".identity-bar__filename"),
+      ).toBeInTheDocument(),
     );
 
     const clearBtn = screen.getByRole("button", { name: "Clear editor" });
     await user.click(clearBtn); // arm
     await user.click(clearBtn); // confirm
 
-    expect(document.querySelector("span.file-name")).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        document.querySelector(".identity-bar__filename")?.textContent,
+      ).toBe("untitled"),
+    );
   });
 });
