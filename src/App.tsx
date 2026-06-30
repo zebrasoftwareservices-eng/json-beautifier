@@ -10,6 +10,7 @@ import {
   CommandPalette,
   type PaletteCommand,
 } from "./components/CommandPalette";
+import { IdentityBar } from "./components/IdentityBar";
 import {
   RightPane,
   type TabId,
@@ -773,10 +774,13 @@ export default function App({ initialTab = "tree" }: AppProps) {
       />
       <AppShell
         identityBar={
-          <header className="app-header">
-            <h1>JSON Beautifier</h1>
-            {fileName && <span className="file-name">{fileName}</span>}
-          </header>
+          <IdentityBar
+            fileName={fileName}
+            onOpenPalette={() => {
+              setPaletteOpen(true);
+              setPaletteKey((k) => k + 1);
+            }}
+          />
         }
         toolbar={
           <>
