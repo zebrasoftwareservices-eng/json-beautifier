@@ -799,7 +799,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
         copyLabel={copyLabel}
         autoFormat={autoFormat}
         onAutoFormatChange={setAutoFormat}
-        repairEnabled={validationStatus === "invalid"}
+        repairErrorCount={validationStatus === "invalid" ? 1 : 0}
       />
 
       {memoryWarning && (
