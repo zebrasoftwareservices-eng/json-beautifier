@@ -16,8 +16,9 @@ import {
   type TabId,
   type RepairResult,
 } from "./components/RightPane";
-import { repairJson } from "./worker/jsonRepair";
-import { getSuggestion } from "./worker/errorSuggestions";
+import { repairJson } from "./lib/json/repair";
+import { getSuggestion } from "./lib/json/suggestions";
+import { fetchJsonUrl } from "./lib/json/load-url";
 import { track } from "./analytics";
 
 const isMac =
@@ -209,102 +210,21 @@ export default function App({ initialTab = "tree" }: AppProps) {
   }
 
   async function handleLoadUrl(url: string) {
-    let parsed: URL;
-    try {
-      parsed = new URL(url);
-    } catch {
-      setError({
-        message: "Invalid URL — please enter a valid http or https URL.",
-      });
-      setValidationStatus("invalid");
-      return;
-    }
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-      setError({
-        message: `URL scheme "${parsed.protocol}" is not allowed — only http and https are supported.`,
-      });
-      setValidationStatus("invalid");
-      return;
-    }
-
     setLoadingUrl(true);
     setError(null);
-    try {
-      const res = await fetch(url);
-      if (!res.ok) {
-        setError({
-          message: `HTTP ${res.status} — the server returned an error response for this URL.`,
-        });
-        setValidationStatus("invalid");
-        return;
-      }
-      const contentLength = res.headers.get("content-length");
-      if (contentLength && parseInt(contentLength, 10) > 1_000_000) {
-        setError({
-          message: `Response is too large (${(parseInt(contentLength, 10) / 1_000_000).toFixed(1)} MB) — maximum 1 MB. Use the Upload button for large files.`,
-        });
-        setValidationStatus("invalid");
-        return;
-      }
-      // Stream the body so we can reject oversized responses before buffering them
-      const reader = res.body?.getReader();
-      if (!reader) {
-        setError({ message: "Could not read response body." });
-        setValidationStatus("invalid");
-        return;
-      }
-      const decoder = new TextDecoder();
-      let bytes = 0;
-      let text = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        bytes += value.byteLength;
-        if (bytes > 1_000_000) {
-          await reader.cancel();
-          setError({
-            message: `Response is too large (>${(bytes / 1_000_000).toFixed(1)} MB) — maximum 1 MB. Use the Upload button for large files.`,
-          });
-          setValidationStatus("invalid");
-          return;
-        }
-        text += decoder.decode(value, { stream: true });
-      }
-      text += decoder.decode();
-      try {
-        JSON.parse(text);
-      } catch {
-        setError({
-          message:
-            "The URL returned a non-JSON response — check that the endpoint serves JSON content.",
-        });
-        setValidationStatus("invalid");
-        return;
-      }
-      setInput(text);
-      setOutput("");
-      setParseTimeMs(null);
-      setFileName(url);
-      setUrlDialogOpen(false);
-      track.urlLoaded();
-    } catch {
-      // fetch() throws TypeError on both CORS and network failures.
-      // Use navigator.onLine as a heuristic to distinguish them.
-      if (!navigator.onLine) {
-        setError({
-          message:
-            "Network error — check your internet connection and try again.",
-        });
-      } else {
-        setError({
-          message:
-            "Could not fetch the URL — this is likely a CORS restriction. The server must include Access-Control-Allow-Origin headers to allow browser requests. Try a CORS-enabled endpoint or paste the JSON manually.",
-        });
-      }
+    const result = await fetchJsonUrl(url);
+    setLoadingUrl(false);
+    if (!result.ok) {
+      setError({ message: result.message });
       setValidationStatus("invalid");
-    } finally {
-      setLoadingUrl(false);
+      return;
     }
+    setInput(result.text);
+    setOutput("");
+    setParseTimeMs(null);
+    setFileName(url);
+    setUrlDialogOpen(false);
+    track.urlLoaded();
   }
 
   async function handleMinify() {
