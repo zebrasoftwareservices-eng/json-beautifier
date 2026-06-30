@@ -35,6 +35,8 @@
   --surface-0: var(--surface-base);
   --surface-1: var(--surface-elevated);
   --border-strong: #c8cfe0;
+  --border-stronger: #a0abbe;
+  --focus-shadow: 0 0 0 2px rgba(99, 102, 241, 0.4);
   --radius: 8px;
   --toolbar-icon-in: #818cf8;
   --toolbar-icon-format: #818cf8;
@@ -51,28 +53,21 @@
 
 /* ── Dark mode: three-surface system ── */
 @media (prefers-color-scheme: dark) {
-  :root {
-    /* Surface layers — three distinct depths */
-    --surface-base: #0f1117; /* page chrome, outermost shell */
-    --surface-panel: #161b27; /* editor, tree view, primary content */
-    --surface-elevated: #1e2535; /* toolbar, nav, inputs, modals */
-
-    /* Borders */
+  :root:not([data-theme="light"]) {
+    --surface-base: #0f1117;
+    --surface-panel: #161b27;
+    --surface-elevated: #1e2535;
     --border: #252d3d;
-
-    /* Text — never pure white */
+    --border-strong: #3a4558;
+    --border-stronger: #566278;
     --text-primary: #e2e8f0;
     --text-secondary: #94a3b8;
     --text-muted: #475569;
-
-    /* Accent */
     --accent: #6366f1;
     --accent-muted: #a78bfa;
     --accent-bg: rgba(99, 102, 241, 0.15);
     --accent-bg-strong: rgba(99, 102, 241, 0.35);
     --accent-border: rgba(99, 102, 241, 0.4);
-
-    /* Semantic */
     --success: #0d9488;
     --warning: #d97706;
     --error: #ef4444;
@@ -80,25 +75,60 @@
     --error-border-subtle: rgba(239, 68, 68, 0.2);
     --warning-bg: rgba(234, 179, 8, 0.08);
     --text-on-accent: #fff;
-
-    /* Component surfaces */
     --code-bg: var(--surface-elevated);
     --social-bg: rgba(30, 37, 53, 0.6);
     --shadow:
       rgba(0, 0, 0, 0.4) 0 8px 20px -4px, rgba(0, 0, 0, 0.25) 0 3px 6px -1px;
-
-    /* Toolbar button design tokens (JSO-27) — dark overrides */
-    --border-strong: #3a4558;
-
-    /* Legacy aliases */
     --bg: var(--surface-panel);
     --text-h: var(--text-primary);
     --text: var(--text-secondary);
   }
 
-  #social .button-icon {
+  :root:not([data-theme="light"]) #social .button-icon {
     filter: invert(1) brightness(2);
   }
+}
+
+/* Explicit dark override (user toggled) */
+[data-theme="dark"] {
+  --surface-base: #0f1117;
+  --surface-panel: #161b27;
+  --surface-elevated: #1e2535;
+  --border: #252d3d;
+  --border-strong: #3a4558;
+  --border-stronger: #566278;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #475569;
+  --accent: #6366f1;
+  --accent-muted: #a78bfa;
+  --accent-bg: rgba(99, 102, 241, 0.15);
+  --accent-bg-strong: rgba(99, 102, 241, 0.35);
+  --accent-border: rgba(99, 102, 241, 0.4);
+  --success: #0d9488;
+  --warning: #d97706;
+  --error: #ef4444;
+  --error-bg: rgba(239, 68, 68, 0.08);
+  --error-border-subtle: rgba(239, 68, 68, 0.2);
+  --warning-bg: rgba(234, 179, 8, 0.08);
+  --text-on-accent: #fff;
+  --code-bg: var(--surface-elevated);
+  --social-bg: rgba(30, 37, 53, 0.6);
+  --shadow:
+    rgba(0, 0, 0, 0.4) 0 8px 20px -4px, rgba(0, 0, 0, 0.25) 0 3px 6px -1px;
+  --bg: var(--surface-panel);
+  --text-h: var(--text-primary);
+  --text: var(--text-secondary);
+  color-scheme: dark;
+}
+
+[data-theme="dark"] #social .button-icon {
+  filter: invert(1) brightness(2);
+}
+
+/* Explicit light override (user toggled) — forces light even if system is dark */
+[data-theme="light"] {
+  color-scheme: light;
 }
 
 /* ── Base styles ── */

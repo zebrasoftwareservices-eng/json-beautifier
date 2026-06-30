@@ -333,6 +333,42 @@ button.toolbar-btn--clear-armed:hover:not(:disabled) {
   width: 100%;
 }
 
+/* ── Theme toggle button ── */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 30px;
+  padding: 6px 8px;
+  background: transparent;
+  border: 0.5px solid var(--border-strong);
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    transform 80ms ease,
+    color 120ms ease;
+  flex-shrink: 0;
+}
+
+.theme-toggle:hover {
+  background: var(--surface-1);
+  border-color: var(--border-stronger);
+  color: var(--text-primary);
+}
+
+.theme-toggle:active {
+  transform: scale(0.96);
+}
+
+.theme-toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-shadow);
+}
+
 .split-left,
 .split-right {
   height: 100%;
