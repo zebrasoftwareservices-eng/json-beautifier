@@ -1,0 +1,29 @@
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--surface-base);
+  color: var(--text-primary);
+  font-family: var(--sans);
+}
+
+.app-shell__identity-bar {
+  height: 52px;
+  flex-shrink: 0;
+}
+
+.app-shell__toolbar {
+  flex-shrink: 0;
+}
+
+.app-shell__content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.app-shell__status-bar {
+  height: 30px;
+  flex-shrink: 0;
+}

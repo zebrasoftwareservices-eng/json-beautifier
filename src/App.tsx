@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import "./App.css";
 import { useJsonWorker } from "./worker/useJsonWorker";
 import { CodeEditor, type CodeEditorError } from "./components/CodeEditor";
-import { SplitPane } from "./components/SplitPane";
+import { AppShell } from "./components/AppShell";
 import { ActionBar, SAMPLE_JSON } from "./components/ActionBar";
 import { EditorEmptyState } from "./components/EditorEmptyState";
 import { LoadUrlDialog } from "./components/LoadUrlDialog";
@@ -762,12 +762,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
             .join(" · ");
 
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1>JSON Beautifier</h1>
-        {fileName && <span className="file-name">{fileName}</span>}
-      </header>
-
+    <>
       <input
         ref={fileInputRef}
         type="file"
@@ -776,123 +771,131 @@ export default function App({ initialTab = "tree" }: AppProps) {
         onChange={handleFileInputChange}
         aria-hidden="true"
       />
-
-      <ActionBar
-        indent={indent}
-        onIndentChange={setIndent}
-        onFormat={() => handleFormat()}
-        onMinify={handleMinify}
-        onValidate={() => handleValidate(undefined, true)}
-        onClear={handleClear}
-        onCopy={handleCopy}
-        onDownload={handleDownload}
-        onPaste={handlePaste}
-        onSample={handleSample}
-        onUpload={handleUploadClick}
-        onLoadUrl={() => setUrlDialogOpen(true)}
-        onRepair={handleRepair}
-        onOpenPalette={() => {
-          setPaletteOpen(true);
-          setPaletteKey((k) => k + 1);
-        }}
-        processing={processing}
-        copyLabel={copyLabel}
-        autoFormat={autoFormat}
-        onAutoFormatChange={setAutoFormat}
-        repairErrorCount={validationStatus === "invalid" ? 1 : 0}
-      />
-
-      {memoryWarning && (
-        <div className="memory-warning">
-          ⚠ Large document ({sizeLabel}) — performance may be affected
-        </div>
-      )}
-      {errorLabel && <div className="error-banner">{errorLabel}</div>}
-
-      <div className="editor-area">
-        <SplitPane
-          left={
-            <div
-              className={`drop-zone${isDragging ? " drop-zone--active" : ""}`}
-              onDragOver={handleDragOver}
-              onDragEnter={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
-              <CodeEditor
-                value={input}
-                onChange={setInput}
-                onPaste={handleEditorPaste}
-                error={error}
-                placeholder={'Paste or type JSON here…\n\n{"key": "value"}'}
-              />
-              {!input && (
-                <EditorEmptyState
-                  onPaste={handlePaste}
-                  onSample={handleSample}
-                  onLoadUrl={() => setUrlDialogOpen(true)}
-                />
-              )}
-              {isDragging && (
-                <div className="drop-overlay" aria-hidden="true">
-                  <span>Drop JSON file to load</span>
-                </div>
-              )}
-              {uploadProgress !== null && (
-                <div
-                  className="upload-progress"
-                  role="progressbar"
-                  aria-valuenow={uploadProgress}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                >
-                  <div
-                    className="upload-progress__bar"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
-                </div>
-              )}
-            </div>
-          }
-          right={
-            <RightPane
-              output={output}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              error={error}
-              input={input}
-              repairResult={repairResult}
-              onAcceptRepair={handleAcceptRepair}
-              partialJson={partialJson}
-              isPartialTree={
-                validationStatus === "invalid" && partialJson !== null
-              }
+      <AppShell
+        identityBar={
+          <header className="app-header">
+            <h1>JSON Beautifier</h1>
+            {fileName && <span className="file-name">{fileName}</span>}
+          </header>
+        }
+        toolbar={
+          <>
+            <ActionBar
+              indent={indent}
+              onIndentChange={setIndent}
+              onFormat={() => handleFormat()}
+              onMinify={handleMinify}
+              onValidate={() => handleValidate(undefined, true)}
+              onClear={handleClear}
+              onCopy={handleCopy}
+              onDownload={handleDownload}
+              onPaste={handlePaste}
+              onSample={handleSample}
+              onUpload={handleUploadClick}
+              onLoadUrl={() => setUrlDialogOpen(true)}
+              onRepair={handleRepair}
+              onOpenPalette={() => {
+                setPaletteOpen(true);
+                setPaletteKey((k) => k + 1);
+              }}
+              processing={processing}
+              copyLabel={copyLabel}
+              autoFormat={autoFormat}
+              onAutoFormatChange={setAutoFormat}
+              repairErrorCount={validationStatus === "invalid" ? 1 : 0}
             />
-          }
-        />
-      </div>
-
-      <div className="status-bar">
-        <span>{statusText}</span>
-        <span className="status-bar__privacy">
-          Processed locally · Load URL requests the remote host directly
-        </span>
-      </div>
-
-      {urlDialogOpen && (
-        <LoadUrlDialog
-          onLoad={handleLoadUrl}
-          onClose={() => setUrlDialogOpen(false)}
-          loading={loadingUrl}
-        />
-      )}
-
-      <CommandPalette
-        key={paletteKey}
-        open={paletteOpen}
-        onClose={() => setPaletteOpen(false)}
-        commands={paletteCmds}
+            {memoryWarning && (
+              <div className="memory-warning">
+                ⚠ Large document ({sizeLabel}) — performance may be affected
+              </div>
+            )}
+            {errorLabel && <div className="error-banner">{errorLabel}</div>}
+          </>
+        }
+        left={
+          <div
+            className={`drop-zone${isDragging ? " drop-zone--active" : ""}`}
+            onDragOver={handleDragOver}
+            onDragEnter={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <CodeEditor
+              value={input}
+              onChange={setInput}
+              onPaste={handleEditorPaste}
+              error={error}
+              placeholder={'Paste or type JSON here…\n\n{"key": "value"}'}
+            />
+            {!input && (
+              <EditorEmptyState
+                onPaste={handlePaste}
+                onSample={handleSample}
+                onLoadUrl={() => setUrlDialogOpen(true)}
+              />
+            )}
+            {isDragging && (
+              <div className="drop-overlay" aria-hidden="true">
+                <span>Drop JSON file to load</span>
+              </div>
+            )}
+            {uploadProgress !== null && (
+              <div
+                className="upload-progress"
+                role="progressbar"
+                aria-valuenow={uploadProgress}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              >
+                <div
+                  className="upload-progress__bar"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+            )}
+          </div>
+        }
+        right={
+          <RightPane
+            output={output}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            error={error}
+            input={input}
+            repairResult={repairResult}
+            onAcceptRepair={handleAcceptRepair}
+            partialJson={partialJson}
+            isPartialTree={
+              validationStatus === "invalid" && partialJson !== null
+            }
+          />
+        }
+        statusBar={
+          <div className="status-bar">
+            <span>{statusText}</span>
+            <span className="status-bar__privacy">
+              Processed locally · Load URL requests the remote host directly
+            </span>
+          </div>
+        }
+        modals={
+          <>
+            {urlDialogOpen && (
+              <LoadUrlDialog
+                onLoad={handleLoadUrl}
+                onClose={() => setUrlDialogOpen(false)}
+                loading={loadingUrl}
+              />
+            )}
+            <CommandPalette
+              key={paletteKey}
+              open={paletteOpen}
+              onClose={() => setPaletteOpen(false)}
+              commands={paletteCmds}
+            />
+          </>
+        }
       />
-    </div>
+    </>
   );
 }
