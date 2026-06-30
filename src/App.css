@@ -42,39 +42,117 @@
 .action-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 4px;
+  padding: 6px 12px;
   border-bottom: 1px solid var(--border);
   background: var(--surface-elevated);
   flex-shrink: 0;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
-.action-group {
+.action-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.toolbar-zone {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
+  flex-shrink: 0;
 }
 
-.action-group + .action-group {
-  padding-left: 8px;
-  border-left: 1px solid var(--border);
+.toolbar-divider {
+  width: 0.5px;
+  height: 24px;
+  background: var(--border);
+  flex-shrink: 0;
+  margin: 0 4px;
 }
 
-.auto-format-label {
+.toolbar-spacer {
+  flex: 1;
+  min-width: 8px;
+}
+
+/* Repair badge wrapper */
+.toolbar-repair-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.toolbar-repair-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  background: var(--error);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  padding: 0 3px;
+  pointer-events: none;
+  border: 1.5px solid var(--surface-elevated);
+}
+
+/* Auto-format toggle switch */
+.auto-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
   color: var(--text-secondary);
+  font-weight: 500;
   cursor: pointer;
   user-select: none;
-  font-weight: 500;
+  white-space: nowrap;
+  padding: 0 4px;
 }
 
-.auto-format-label input[type="checkbox"] {
-  accent-color: var(--accent);
-  cursor: pointer;
+.auto-toggle--disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.auto-toggle__track {
+  position: relative;
+  width: 28px;
+  height: 16px;
+  border-radius: 8px;
+  background: var(--border-strong);
+  transition: background 150ms ease;
+  flex-shrink: 0;
+  outline: none;
+}
+
+.auto-toggle__track:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent-border);
+}
+
+.auto-toggle__track--on {
+  background: var(--accent);
+}
+
+.auto-toggle__thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  background: #fff;
+  transition: transform 150ms ease;
+}
+
+.auto-toggle__track--on .auto-toggle__thumb {
+  transform: translateX(12px);
 }
 
 .indent-label {
@@ -133,18 +211,18 @@ button.primary-btn {
   font-weight: 600;
 }
 
-/* ── Toolbar icon-accent ghost buttons (JSO-27) ── */
+/* ── Toolbar buttons (JSO-27 / JSO-28) ── */
 button.toolbar-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 34px;
-  padding: 0 14px;
+  gap: 5px;
+  height: 30px;
+  padding: 0 10px;
   border-radius: var(--radius);
   border: 0.5px solid var(--border);
   background: var(--surface-1);
   color: var(--text-primary);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   transition:
     background 120ms ease,
@@ -161,17 +239,73 @@ button.toolbar-btn .toolbar-btn__icon {
   flex-shrink: 0;
 }
 
+/* Primary filled: Format button */
+button.toolbar-btn--primary {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--text-on-accent);
+  font-weight: 600;
+}
+
+button.toolbar-btn--primary:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: transparent;
+  opacity: 0.88;
+}
+
+button.toolbar-btn--primary .toolbar-btn__icon {
+  color: var(--text-on-accent);
+}
+
+/* Icon-only utility buttons */
+button.toolbar-btn--icon-only {
+  width: 30px;
+  padding: 0;
+  justify-content: center;
+}
+
+/* Zone-specific icon colors */
+button.toolbar-btn--in .toolbar-btn__icon {
+  color: var(--toolbar-icon-in);
+}
+button.toolbar-btn--neutral .toolbar-btn__icon {
+  color: var(--text-muted);
+}
 button.toolbar-btn--format .toolbar-btn__icon {
+  color: var(--toolbar-icon-format);
+}
+button.toolbar-btn--minify .toolbar-btn__icon {
   color: var(--toolbar-icon-format);
 }
 button.toolbar-btn--validate .toolbar-btn__icon {
   color: var(--toolbar-icon-validate);
 }
+button.toolbar-btn--repair .toolbar-btn__icon {
+  color: var(--toolbar-icon-repair);
+}
+button.toolbar-btn--copy .toolbar-btn__icon {
+  color: var(--toolbar-icon-in);
+}
 button.toolbar-btn--export .toolbar-btn__icon {
   color: var(--toolbar-icon-export);
 }
-button.toolbar-btn--clear .toolbar-btn__icon {
+
+/* Clear button */
+button.toolbar-btn--clear {
   color: var(--toolbar-icon-clear);
+}
+button.toolbar-btn--clear:hover:not(:disabled) {
+  color: var(--toolbar-icon-clear);
+}
+button.toolbar-btn--clear-armed {
+  background: var(--error-bg);
+  border-color: var(--error-border-subtle);
+  color: var(--error);
+}
+button.toolbar-btn--clear-armed:hover:not(:disabled) {
+  background: var(--error-bg);
+  border-color: var(--error);
+  color: var(--error);
 }
 
 /* ── Error banner ── */
@@ -970,11 +1104,7 @@ mark.tree-match {
   }
 
   .action-bar {
-    gap: 4px;
-  }
-
-  .action-group + .action-group {
-    padding-left: 4px;
+    gap: 3px;
   }
 }
 

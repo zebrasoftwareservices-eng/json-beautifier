@@ -245,9 +245,10 @@ describe("Clear button", () => {
     await user.click(formatBtn);
     expect(outputArea.value).not.toBe("");
 
-    const clearBtn = screen.getByRole("button", { name: "Clear" });
+    const clearBtn = screen.getByRole("button", { name: "Clear editor" });
     await act(async () => {
-      await user.click(clearBtn);
+      await user.click(clearBtn); // arm
+      await user.click(clearBtn); // confirm
     });
 
     expect(inputArea.value).toBe("");
@@ -261,8 +262,9 @@ describe("Clear button", () => {
     await user.click(formatBtn);
     expect(document.querySelector(".error-banner")).toBeInTheDocument();
 
-    const clearBtn = screen.getByRole("button", { name: "Clear" });
-    await user.click(clearBtn);
+    const clearBtn = screen.getByRole("button", { name: "Clear editor" });
+    await user.click(clearBtn); // arm
+    await user.click(clearBtn); // confirm
 
     expect(document.querySelector(".error-banner")).not.toBeInTheDocument();
   });
@@ -316,10 +318,10 @@ describe("Auto-format on paste", () => {
     ) as HTMLTextAreaElement;
     const triggerPaste = screen.getByTestId("trigger-paste");
 
-    // Uncheck the "Auto" checkbox using fireEvent (avoids userEvent+fakeTimers deadlock)
-    const autoCheckbox = screen.getByRole("checkbox");
-    fireEvent.click(autoCheckbox);
-    expect((autoCheckbox as HTMLInputElement).checked).toBe(false);
+    // Disable the auto-format toggle using fireEvent (avoids userEvent+fakeTimers deadlock)
+    const autoToggle = screen.getByRole("switch", { name: /auto-format/i });
+    fireEvent.click(autoToggle);
+    expect(autoToggle.getAttribute("aria-checked")).toBe("false");
 
     fireEvent.change(inputArea, { target: { value: validJson } });
     fireEvent.click(triggerPaste);
@@ -590,10 +592,13 @@ describe("handleClear resets validation state", () => {
     expect(statusBar?.textContent).toMatch(/✓ Valid/);
 
     // Use fireEvent (synchronous) to avoid userEvent+advanceTimers deadlock.
-    // handleClear resets validationStatus to "idle" synchronously.
-    const clearBtn = screen.getByRole("button", { name: "Clear" });
+    // Two separate acts so React re-renders between arm and confirm clicks.
+    const clearBtn = screen.getByRole("button", { name: "Clear editor" });
     await act(async () => {
-      fireEvent.click(clearBtn);
+      fireEvent.click(clearBtn); // arm
+    });
+    await act(async () => {
+      fireEvent.click(clearBtn); // confirm
     });
 
     expect(statusBar?.textContent).toMatch(/Ready/);
@@ -761,9 +766,12 @@ describe("Repair button click behavior", () => {
       fireEvent.click(repairBtn);
     });
     expect(screen.getByTestId("repair-success")).toBeInTheDocument();
-    const clearBtn = screen.getByRole("button", { name: "Clear" });
+    const clearBtn = screen.getByRole("button", { name: "Clear editor" });
     await act(async () => {
-      fireEvent.click(clearBtn);
+      fireEvent.click(clearBtn); // arm
+    });
+    await act(async () => {
+      fireEvent.click(clearBtn); // confirm
     });
     expect(screen.getByTestId("repair-empty")).toBeInTheDocument();
   });
@@ -1192,8 +1200,13 @@ describe("Memory warning banner", () => {
     fireEvent.change(inputArea, { target: { value: "x".repeat(10_000_001) } });
     expect(document.querySelector(".memory-warning")).toBeInTheDocument();
 
-    const clearBtn = screen.getByRole("button", { name: "Clear" });
-    fireEvent.click(clearBtn);
+    const clearBtn = screen.getByRole("button", { name: "Clear editor" });
+    act(() => {
+      fireEvent.click(clearBtn);
+    }); // arm
+    act(() => {
+      fireEvent.click(clearBtn);
+    }); // confirm
 
     expect(document.querySelector(".memory-warning")).not.toBeInTheDocument();
   });
@@ -1631,7 +1644,9 @@ describe("File name in header", () => {
       expect(document.querySelector("span.file-name")).toBeInTheDocument(),
     );
 
-    await user.click(screen.getByRole("button", { name: "Clear" }));
+    const clearBtn = screen.getByRole("button", { name: "Clear editor" });
+    await user.click(clearBtn); // arm
+    await user.click(clearBtn); // confirm
 
     expect(document.querySelector("span.file-name")).not.toBeInTheDocument();
   });
