@@ -14,11 +14,9 @@ interface IdentityBarProps {
 export function IdentityBar({ fileName, onOpenPalette }: IdentityBarProps) {
   const searchRef = useRef<HTMLButtonElement>(null);
 
-  const displayName = fileName
-    ? fileName.length > 40
-      ? "…" + fileName.slice(-37)
-      : fileName
-    : "untitled";
+  const effectiveName = fileName && fileName.length > 0 ? fileName : "untitled";
+  const displayName =
+    effectiveName.length > 40 ? "…" + effectiveName.slice(-37) : effectiveName;
 
   return (
     <div className="identity-bar" role="banner">
@@ -31,7 +29,7 @@ export function IdentityBar({ fileName, onOpenPalette }: IdentityBarProps) {
         <span className="identity-bar__sep" aria-hidden="true">
           /
         </span>
-        <span className="identity-bar__filename" title={fileName ?? "untitled"}>
+        <span className="identity-bar__filename" title={effectiveName}>
           {displayName}
         </span>
       </div>
