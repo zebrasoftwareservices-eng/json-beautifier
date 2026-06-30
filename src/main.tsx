@@ -2,13 +2,30 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
+import { SpeedInsights } from "@vercel/speed-insights/react";
+import { onCLS, onINP, onLCP } from "web-vitals";
+import { initAnalytics, trackEvent } from "./analytics";
 import "./index.css";
+
+initAnalytics();
 import App from "./App.tsx";
 import { HomePage } from "./pages/HomePage.tsx";
 import { ConverterPage } from "./pages/ConverterPage.tsx";
 import { JsonValidatorPage } from "./pages/JsonValidatorPage.tsx";
 import { JsonRepairPage } from "./pages/JsonRepairPage.tsx";
 import { JsonMinifierPage } from "./pages/JsonMinifierPage.tsx";
+
+// Report Core Web Vitals to GA4
+function sendToGA(metric: { name: string; value: number; id: string }) {
+  trackEvent("web_vitals", {
+    metric_name: metric.name,
+    metric_value: Math.round(metric.value),
+    metric_id: metric.id,
+  });
+}
+onCLS(sendToGA);
+onINP(sendToGA);
+onLCP(sendToGA);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -30,5 +47,6 @@ createRoot(document.getElementById("root")!).render(
         </Routes>
       </BrowserRouter>
     </HelmetProvider>
+    <SpeedInsights />
   </StrictMode>,
 );
