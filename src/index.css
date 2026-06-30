@@ -167,6 +167,15 @@ body {
   box-sizing: border-box;
 }
 
+/* AppShell (editor) is full-bleed — no max-width, no side gutters */
+html[data-layout="app"] #root {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  border: none;
+  min-height: auto;
+}
+
 h1,
 h2 {
   font-family: var(--heading);

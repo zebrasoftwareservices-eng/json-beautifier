@@ -3,6 +3,8 @@ import { useRef, useState, useCallback } from "react";
 interface SplitPaneProps {
   left: React.ReactNode;
   right: React.ReactNode;
+  storageKey?: string;
+  defaultPct?: number;
 }
 
 const STORAGE_KEY = "json-beautifier:panel-ratio";
@@ -14,9 +16,9 @@ const MAX_PCT = 80;
 /** Pixel nudge per Alt+Arrow keypress. */
 const NUDGE_PX = 10;
 
-function loadStoredRatio(): number {
+function loadStoredRatio(key: string, fallback: number): number {
   try {
-    const v = localStorage.getItem(STORAGE_KEY);
+    const v = localStorage.getItem(key);
     if (v !== null) {
       const n = parseFloat(v);
       if (!isNaN(n) && n > 0 && n <= MAX_PCT) return n;
@@ -24,27 +26,33 @@ function loadStoredRatio(): number {
   } catch {
     /* ignore — private browsing or storage full */
   }
-  return DEFAULT_PCT;
+  return fallback;
 }
 
-function persist(pct: number): void {
+function persist(key: string, pct: number): void {
   try {
-    localStorage.setItem(STORAGE_KEY, String(pct));
+    localStorage.setItem(key, String(pct));
   } catch {
     /* ignore */
   }
 }
 
-export function SplitPane({ left, right }: SplitPaneProps) {
+export function SplitPane({
+  left,
+  right,
+  storageKey = STORAGE_KEY,
+  defaultPct = DEFAULT_PCT,
+}: SplitPaneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Lazy initializer reads localStorage once — no re-render flash on load.
-  const [leftPct, setLeftPct] = useState<number>(loadStoredRatio);
+  const [leftPct, setLeftPct] = useState<number>(() =>
+    loadStoredRatio(storageKey, defaultPct),
+  );
   // Tracks whether the left pane is at its minimum (collapsed) width.
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
 
   // Store the ratio to restore after a double-click collapse.
-  const prevRatioRef = useRef<number>(DEFAULT_PCT);
+  const prevRatioRef = useRef<number>(defaultPct);
   // Track value during drag for persistence on mouseup without stale closure.
   const dragPctRef = useRef<number | null>(null);
 
@@ -71,11 +79,11 @@ export function SplitPane({ left, right }: SplitPaneProps) {
         const next = clamp(
           e.key === "ArrowLeft" ? prev - nudgePct : prev + nudgePct,
         );
-        persist(next);
+        persist(storageKey, next);
         return next;
       });
     },
-    [clamp],
+    [clamp, storageKey],
   );
 
   const onMouseDown = useCallback(
@@ -103,7 +111,7 @@ export function SplitPane({ left, right }: SplitPaneProps) {
         window.removeEventListener("mousemove", onMouseMove);
         window.removeEventListener("mouseup", onMouseUp);
         if (dragPctRef.current !== null) {
-          persist(dragPctRef.current);
+          persist(storageKey, dragPctRef.current);
           dragPctRef.current = null;
         }
       };
@@ -111,7 +119,7 @@ export function SplitPane({ left, right }: SplitPaneProps) {
       window.addEventListener("mousemove", onMouseMove);
       window.addEventListener("mouseup", onMouseUp);
     },
-    [leftPct],
+    [leftPct, storageKey],
   );
 
   // Double-click handle: collapse to minimum or restore previous ratio.
@@ -120,18 +128,18 @@ export function SplitPane({ left, right }: SplitPaneProps) {
     if (isCollapsed) {
       // Restore from collapsed state.
       const restore =
-        prevRatioRef.current > min + 1 ? prevRatioRef.current : DEFAULT_PCT;
+        prevRatioRef.current > min + 1 ? prevRatioRef.current : defaultPct;
       setLeftPct(restore);
       setIsCollapsed(false);
-      persist(restore);
+      persist(storageKey, restore);
     } else {
       // Collapse left pane.
       prevRatioRef.current = leftPct;
       setLeftPct(min);
       setIsCollapsed(true);
-      persist(min);
+      persist(storageKey, min);
     }
-  }, [isCollapsed, leftPct, minPct]);
+  }, [isCollapsed, leftPct, minPct, storageKey, defaultPct]);
 
   return (
     <div ref={containerRef} className="split-pane">
