@@ -12,6 +12,7 @@ describe("EditorEmptyState — hint text", () => {
         onPaste={vi.fn()}
         onSample={vi.fn()}
         onLoadUrl={vi.fn()}
+        onUpload={vi.fn()}
       />,
     );
     expect(
@@ -29,6 +30,7 @@ describe("EditorEmptyState — buttons", () => {
         onPaste={vi.fn()}
         onSample={vi.fn()}
         onLoadUrl={vi.fn()}
+        onUpload={vi.fn()}
       />,
     );
     expect(
@@ -42,6 +44,7 @@ describe("EditorEmptyState — buttons", () => {
         onPaste={vi.fn()}
         onSample={vi.fn()}
         onLoadUrl={vi.fn()}
+        onUpload={vi.fn()}
       />,
     );
     expect(
@@ -55,6 +58,7 @@ describe("EditorEmptyState — buttons", () => {
         onPaste={vi.fn()}
         onSample={vi.fn()}
         onLoadUrl={vi.fn()}
+        onUpload={vi.fn()}
       />,
     );
     expect(
@@ -62,15 +66,30 @@ describe("EditorEmptyState — buttons", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders exactly 3 buttons", () => {
+  it("renders the Upload button with correct aria-label", () => {
     render(
       <EditorEmptyState
         onPaste={vi.fn()}
         onSample={vi.fn()}
         onLoadUrl={vi.fn()}
+        onUpload={vi.fn()}
       />,
     );
-    expect(screen.getAllByRole("button")).toHaveLength(3);
+    expect(
+      screen.getByRole("button", { name: "Upload file" }),
+    ).toBeInTheDocument();
+  });
+
+  it("renders exactly 4 buttons", () => {
+    render(
+      <EditorEmptyState
+        onPaste={vi.fn()}
+        onSample={vi.fn()}
+        onLoadUrl={vi.fn()}
+        onUpload={vi.fn()}
+      />,
+    );
+    expect(screen.getAllByRole("button")).toHaveLength(4);
   });
 });
 
@@ -85,6 +104,7 @@ describe("EditorEmptyState — callbacks", () => {
         onPaste={onPaste}
         onSample={vi.fn()}
         onLoadUrl={vi.fn()}
+        onUpload={vi.fn()}
       />,
     );
     await user.click(
@@ -101,6 +121,7 @@ describe("EditorEmptyState — callbacks", () => {
         onPaste={vi.fn()}
         onSample={onSample}
         onLoadUrl={vi.fn()}
+        onUpload={vi.fn()}
       />,
     );
     await user.click(screen.getByRole("button", { name: "Try sample JSON" }));
@@ -115,22 +136,40 @@ describe("EditorEmptyState — callbacks", () => {
         onPaste={vi.fn()}
         onSample={vi.fn()}
         onLoadUrl={onLoadUrl}
+        onUpload={vi.fn()}
       />,
     );
     await user.click(screen.getByRole("button", { name: "Load from URL" }));
     expect(onLoadUrl).toHaveBeenCalledOnce();
   });
 
-  it("does not call onSample or onLoadUrl when Paste is clicked", async () => {
+  it("calls onUpload when the Upload button is clicked", async () => {
+    const onUpload = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <EditorEmptyState
+        onPaste={vi.fn()}
+        onSample={vi.fn()}
+        onLoadUrl={vi.fn()}
+        onUpload={onUpload}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Upload file" }));
+    expect(onUpload).toHaveBeenCalledOnce();
+  });
+
+  it("does not call onSample, onLoadUrl, or onUpload when Paste is clicked", async () => {
     const onPaste = vi.fn();
     const onSample = vi.fn();
     const onLoadUrl = vi.fn();
+    const onUpload = vi.fn();
     const user = userEvent.setup();
     render(
       <EditorEmptyState
         onPaste={onPaste}
         onSample={onSample}
         onLoadUrl={onLoadUrl}
+        onUpload={onUpload}
       />,
     );
     await user.click(
@@ -138,22 +177,66 @@ describe("EditorEmptyState — callbacks", () => {
     );
     expect(onSample).not.toHaveBeenCalled();
     expect(onLoadUrl).not.toHaveBeenCalled();
+    expect(onUpload).not.toHaveBeenCalled();
   });
 
-  it("does not call onPaste or onLoadUrl when Try sample JSON is clicked", async () => {
+  it("does not call onPaste, onLoadUrl, or onUpload when Try sample JSON is clicked", async () => {
     const onPaste = vi.fn();
     const onSample = vi.fn();
     const onLoadUrl = vi.fn();
+    const onUpload = vi.fn();
     const user = userEvent.setup();
     render(
       <EditorEmptyState
         onPaste={onPaste}
         onSample={onSample}
         onLoadUrl={onLoadUrl}
+        onUpload={onUpload}
       />,
     );
     await user.click(screen.getByRole("button", { name: "Try sample JSON" }));
     expect(onPaste).not.toHaveBeenCalled();
+    expect(onLoadUrl).not.toHaveBeenCalled();
+    expect(onUpload).not.toHaveBeenCalled();
+  });
+
+  it("does not call onPaste, onSample, or onUpload when Load URL is clicked", async () => {
+    const onPaste = vi.fn();
+    const onSample = vi.fn();
+    const onLoadUrl = vi.fn();
+    const onUpload = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <EditorEmptyState
+        onPaste={onPaste}
+        onSample={onSample}
+        onLoadUrl={onLoadUrl}
+        onUpload={onUpload}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Load from URL" }));
+    expect(onPaste).not.toHaveBeenCalled();
+    expect(onSample).not.toHaveBeenCalled();
+    expect(onUpload).not.toHaveBeenCalled();
+  });
+
+  it("does not call onPaste, onSample, or onLoadUrl when Upload is clicked", async () => {
+    const onPaste = vi.fn();
+    const onSample = vi.fn();
+    const onLoadUrl = vi.fn();
+    const onUpload = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <EditorEmptyState
+        onPaste={onPaste}
+        onSample={onSample}
+        onLoadUrl={onLoadUrl}
+        onUpload={onUpload}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Upload file" }));
+    expect(onPaste).not.toHaveBeenCalled();
+    expect(onSample).not.toHaveBeenCalled();
     expect(onLoadUrl).not.toHaveBeenCalled();
   });
 });
@@ -167,6 +250,7 @@ describe("EditorEmptyState — accessibility", () => {
         onPaste={vi.fn()}
         onSample={vi.fn()}
         onLoadUrl={vi.fn()}
+        onUpload={vi.fn()}
       />,
     );
     expect(
