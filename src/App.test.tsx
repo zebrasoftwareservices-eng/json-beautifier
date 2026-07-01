@@ -1306,6 +1306,21 @@ describe("Upload button / file picker", () => {
     expect(fileInput).not.toBeVisible();
   });
 
+  it("clicking Upload in the empty state opens the file picker (JSO-34 regression)", async () => {
+    const user = userEvent.setup();
+    render(<App />, { wrapper });
+
+    const fileInput = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const clickSpy = vi.spyOn(fileInput, "click");
+
+    const uploadBtn = screen.getByRole("button", { name: "Upload file" });
+    await user.click(uploadBtn);
+
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+  });
+
   it("selecting a .json file loads content into input and shows file name in header", async () => {
     mockFileReader('{"hello":"world"}');
     render(<App />, { wrapper });

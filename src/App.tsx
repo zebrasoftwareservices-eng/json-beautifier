@@ -181,6 +181,10 @@ export default function App({ initialTab = "tree" }: AppProps) {
     }
   }
 
+  function handleUploadClick() {
+    fileInputRef.current?.click();
+  }
+
   function handleFileInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) void handleFileLoad(file);
