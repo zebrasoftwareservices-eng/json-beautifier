@@ -3,7 +3,8 @@ import "./App.css";
 import { useJsonWorker } from "./worker/useJsonWorker";
 import { CodeEditor, type CodeEditorError } from "./components/CodeEditor";
 import { AppShell } from "./components/AppShell";
-import { ActionBar, SAMPLE_JSON } from "./components/ActionBar";
+import { SAMPLE_JSON } from "./components/ActionBar";
+import { ActionToolbar } from "./components/ActionToolbar";
 import { EditorEmptyState } from "./components/EditorEmptyState";
 import { LoadUrlDialog } from "./components/LoadUrlDialog";
 import {
@@ -178,10 +179,6 @@ export default function App({ initialTab = "tree" }: AppProps) {
         setUploadProgress(null);
       }
     }
-  }
-
-  function handleUploadClick() {
-    fileInputRef.current?.click();
   }
 
   function handleFileInputChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -704,25 +701,18 @@ export default function App({ initialTab = "tree" }: AppProps) {
         }
         toolbar={
           <>
-            <ActionBar
+            <ActionToolbar
               indent={indent}
               onIndentChange={setIndent}
               onFormat={() => handleFormat()}
               onMinify={handleMinify}
               onValidate={() => handleValidate(undefined, true)}
-              onClear={handleClear}
+              onRepair={handleRepair}
               onCopy={handleCopy}
               onDownload={handleDownload}
-              onPaste={handlePaste}
-              onSample={handleSample}
-              onUpload={handleUploadClick}
-              onLoadUrl={() => setUrlDialogOpen(true)}
-              onRepair={handleRepair}
-              onOpenPalette={() => {
-                setPaletteOpen(true);
-                setPaletteKey((k) => k + 1);
-              }}
+              onClear={handleClear}
               processing={processing}
+              hasInput={input.trim().length > 0}
               copyLabel={copyLabel}
               autoFormat={autoFormat}
               onAutoFormatChange={setAutoFormat}

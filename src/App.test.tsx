@@ -174,8 +174,7 @@ describe("Format (beautify)", () => {
   it("formats valid JSON with 4-space indent when selected", async () => {
     const { user, inputArea, outputArea, formatBtn } = setup();
 
-    const indentSelect = screen.getByRole("combobox");
-    await user.selectOptions(indentSelect, "4");
+    await user.click(screen.getByRole("radio", { name: "4" }));
     setInput(inputArea, validJson);
     await user.click(formatBtn);
 
@@ -236,7 +235,7 @@ describe("Sample button", () => {
   it("loads sample JSON into the input editor", async () => {
     const { user, inputArea } = setup();
 
-    const sampleBtn = screen.getByRole("button", { name: "Sample" });
+    const sampleBtn = screen.getByRole("button", { name: "Try sample JSON" });
     await user.click(sampleBtn);
 
     expect(inputArea.value).toBe(SAMPLE_JSON);
@@ -616,29 +615,24 @@ describe("handleSample resets validation state", () => {
     vi.useRealTimers();
   });
 
-  it("shows Ready in status bar after Sample (resets nodeCount and validationStatus)", async () => {
+  it("shows Ready in status bar after Sample (Sample is only reachable with empty input, which is already idle)", async () => {
     vi.useFakeTimers();
     render(<App />, { wrapper });
 
-    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
-    fireEvent.change(inputArea, { target: { value: validJson } });
+    const statusBar = document.querySelector(".status-bar");
+    expect(statusBar?.textContent).toMatch(/Ready/);
+
+    const sampleBtn = screen.getByRole("button", { name: "Try sample JSON" });
+    await act(async () => {
+      fireEvent.click(sampleBtn);
+    });
 
     await act(async () => {
       vi.advanceTimersByTime(300);
     });
 
-    const statusBar = document.querySelector(".status-bar");
+    // Sample JSON is valid — status transitions from idle to Valid.
     expect(statusBar?.textContent).toMatch(/✓ Valid/);
-
-    // Use fireEvent (synchronous) to avoid userEvent+advanceTimers deadlock.
-    // handleSample resets validationStatus to "idle" synchronously.
-    const sampleBtn = screen.getByRole("button", { name: "Sample" });
-    await act(async () => {
-      fireEvent.click(sampleBtn);
-    });
-
-    // After clicking Sample, validationStatus resets to idle → "Ready" shown
-    expect(statusBar?.textContent).toMatch(/Ready/);
   });
 });
 
@@ -816,7 +810,7 @@ describe("Load URL feature", () => {
 
   it("Load URL button is visible and enabled", () => {
     render(<App />, { wrapper });
-    const btn = screen.getByRole("button", { name: /load url/i });
+    const btn = screen.getByRole("button", { name: /load from url/i });
     expect(btn).toBeInTheDocument();
     expect(btn).not.toBeDisabled();
   });
@@ -825,14 +819,14 @@ describe("Load URL feature", () => {
     const user = userEvent.setup();
     render(<App />, { wrapper });
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /load url/i }));
+    await user.click(screen.getByRole("button", { name: /load from url/i }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
   it("Cancel button closes the dialog", async () => {
     const user = userEvent.setup();
     render(<App />, { wrapper });
-    await user.click(screen.getByRole("button", { name: /load url/i }));
+    await user.click(screen.getByRole("button", { name: /load from url/i }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -844,7 +838,7 @@ describe("Load URL feature", () => {
 
     const user = userEvent.setup();
     render(<App />, { wrapper });
-    await user.click(screen.getByRole("button", { name: /load url/i }));
+    await user.click(screen.getByRole("button", { name: /load from url/i }));
 
     const urlInput = screen.getByRole("textbox", { name: "URL" });
     fireEvent.change(urlInput, { target: { value: "file:///etc/passwd" } });
@@ -873,7 +867,7 @@ describe("Load URL feature", () => {
 
     const user = userEvent.setup();
     render(<App />, { wrapper });
-    await user.click(screen.getByRole("button", { name: /load url/i }));
+    await user.click(screen.getByRole("button", { name: /load from url/i }));
 
     const urlInput = screen.getByRole("textbox", { name: "URL" });
     fireEvent.change(urlInput, {
@@ -899,7 +893,7 @@ describe("Load URL feature", () => {
 
     const user = userEvent.setup();
     render(<App />, { wrapper });
-    await user.click(screen.getByRole("button", { name: /load url/i }));
+    await user.click(screen.getByRole("button", { name: /load from url/i }));
 
     const urlInput = screen.getByRole("textbox", { name: "URL" });
     fireEvent.change(urlInput, {
@@ -924,7 +918,7 @@ describe("Load URL feature", () => {
 
     const user = userEvent.setup();
     render(<App />, { wrapper });
-    await user.click(screen.getByRole("button", { name: /load url/i }));
+    await user.click(screen.getByRole("button", { name: /load from url/i }));
 
     const urlInput = screen.getByRole("textbox", { name: "URL" });
     fireEvent.change(urlInput, {
@@ -949,7 +943,7 @@ describe("Load URL feature", () => {
 
     const user = userEvent.setup();
     render(<App />, { wrapper });
-    await user.click(screen.getByRole("button", { name: /load url/i }));
+    await user.click(screen.getByRole("button", { name: /load from url/i }));
 
     const urlInput = screen.getByRole("textbox", { name: "URL" });
     fireEvent.change(urlInput, {
@@ -980,7 +974,7 @@ describe("Load URL feature", () => {
 
     const user = userEvent.setup();
     render(<App />, { wrapper });
-    await user.click(screen.getByRole("button", { name: /load url/i }));
+    await user.click(screen.getByRole("button", { name: /load from url/i }));
 
     const urlInput = screen.getByRole("textbox", { name: "URL" });
     fireEvent.change(urlInput, {
@@ -1009,7 +1003,7 @@ describe("Load URL feature", () => {
 
     const user = userEvent.setup();
     render(<App />, { wrapper });
-    await user.click(screen.getByRole("button", { name: /load url/i }));
+    await user.click(screen.getByRole("button", { name: /load from url/i }));
 
     const urlInput = screen.getByRole("textbox", { name: "URL" });
     fireEvent.change(urlInput, {
@@ -1039,7 +1033,7 @@ describe("Load URL feature", () => {
 
     const user = userEvent.setup();
     render(<App />, { wrapper });
-    await user.click(screen.getByRole("button", { name: /load url/i }));
+    await user.click(screen.getByRole("button", { name: /load from url/i }));
 
     const urlInput = screen.getByRole("textbox", { name: "URL" });
     fireEvent.change(urlInput, {
@@ -1066,8 +1060,10 @@ describe("Download button", () => {
     vi.unstubAllGlobals();
   });
 
-  it("Download button is visible and enabled", () => {
+  it("Download button is visible and enabled when there is input", () => {
     render(<App />, { wrapper });
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    setInput(inputArea, validJson);
     const btn = screen.getByRole("button", { name: /download/i });
     expect(btn).toBeInTheDocument();
     expect(btn).not.toBeDisabled();
@@ -1308,19 +1304,6 @@ describe("Upload button / file picker", () => {
     expect(fileInput).toBeInTheDocument();
     expect(fileInput.accept).toBe(".json,.txt,.jsonl");
     expect(fileInput).not.toBeVisible();
-  });
-
-  it("clicking Upload button triggers the hidden file input click", async () => {
-    render(<App />, { wrapper });
-    const fileInput = document.querySelector(
-      'input[type="file"]',
-    ) as HTMLInputElement;
-    const clickSpy = vi.spyOn(fileInput, "click");
-
-    const uploadBtn = screen.getByRole("button", { name: "Upload" });
-    await userEvent.setup().click(uploadBtn);
-
-    expect(clickSpy).toHaveBeenCalledTimes(1);
   });
 
   it("selecting a .json file loads content into input and shows file name in header", async () => {
