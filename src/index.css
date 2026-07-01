@@ -1,153 +1,34 @@
-/* ── Font stacks ── */
+/* ── Additional root tokens not yet in the design system ── */
 :root {
-  --sans: "Inter", system-ui, "Segoe UI", sans-serif;
-  --heading: "Inter", system-ui, "Segoe UI", sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --heading: var(--sans);
 
-  /* ── Light mode tokens ── */
-  --surface-base: #f8f9fb;
-  --surface-panel: #ffffff;
-  --surface-elevated: #f1f3f7;
-  --border: #e2e6ee;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
-  --accent: #6366f1;
-  --accent-muted: #a78bfa;
-  --accent-bg: rgba(99, 102, 241, 0.1);
-  --accent-bg-strong: rgba(99, 102, 241, 0.3);
-  --accent-border: rgba(99, 102, 241, 0.4);
-  --success: #0d9488;
-  --warning: #d97706;
-  --error: #ef4444;
-  --error-bg: rgba(239, 68, 68, 0.08);
-  --error-border-subtle: rgba(239, 68, 68, 0.2);
-  --warning-bg: rgba(234, 179, 8, 0.08);
-  --warning-border-subtle: rgba(217, 119, 6, 0.25);
-  --text-on-accent: #fff;
-
-  --code-bg: #f1f3f7;
-  --social-bg: rgba(241, 243, 247, 0.6);
-  --shadow:
-    rgba(0, 0, 0, 0.08) 0 4px 12px -2px, rgba(0, 0, 0, 0.04) 0 2px 4px -1px;
-
-  /* Toolbar button design tokens (JSO-27) */
-  --surface-0: var(--surface-base);
-  --surface-1: var(--surface-elevated);
-  --border-strong: #c8cfe0;
-  --border-stronger: #a0abbe;
-  --focus-shadow: 0 0 0 2px rgba(99, 102, 241, 0.4);
-  --radius: 8px;
+  /* Toolbar icon colors (JSO-27) */
   --toolbar-icon-in: #818cf8;
   --toolbar-icon-format: #818cf8;
   --toolbar-icon-validate: #34d399;
   --toolbar-icon-repair: #f59e0b;
   --toolbar-icon-export: #60a5fa;
   --toolbar-icon-clear: #f87171;
-
-  /* Legacy aliases (keep components working during migration) */
-  --bg: var(--surface-panel);
-  --text-h: var(--text-primary);
-  --text: var(--text-secondary);
 }
 
-/* ── Dark mode: three-surface system ── */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --surface-base: #0f1117;
-    --surface-panel: #161b27;
-    --surface-elevated: #1e2535;
-    --border: #252d3d;
-    --border-strong: #3a4558;
-    --border-stronger: #566278;
-    --text-primary: #e2e8f0;
-    --text-secondary: #94a3b8;
-    --text-muted: #475569;
-    --accent: #6366f1;
-    --accent-muted: #a78bfa;
-    --accent-bg: rgba(99, 102, 241, 0.15);
-    --accent-bg-strong: rgba(99, 102, 241, 0.35);
-    --accent-border: rgba(99, 102, 241, 0.4);
-    --success: #0d9488;
-    --warning: #d97706;
-    --error: #ef4444;
-    --error-bg: rgba(239, 68, 68, 0.08);
-    --error-border-subtle: rgba(239, 68, 68, 0.2);
-    --warning-bg: rgba(234, 179, 8, 0.08);
-    --text-on-accent: #fff;
-    --code-bg: var(--surface-elevated);
-    --social-bg: rgba(30, 37, 53, 0.6);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 8px 20px -4px, rgba(0, 0, 0, 0.25) 0 3px 6px -1px;
-    --bg: var(--surface-panel);
-    --text-h: var(--text-primary);
-    --text: var(--text-secondary);
-  }
+/* Dark icon inversion */
+[data-theme="dark"] #social .button-icon {
+  filter: invert(1) brightness(2);
+}
 
+@media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) #social .button-icon {
     filter: invert(1) brightness(2);
   }
 }
 
-/* Explicit dark override (user toggled) */
-[data-theme="dark"] {
-  --surface-base: #0f1117;
-  --surface-panel: #161b27;
-  --surface-elevated: #1e2535;
-  --border: #252d3d;
-  --border-strong: #3a4558;
-  --border-stronger: #566278;
-  --text-primary: #e2e8f0;
-  --text-secondary: #94a3b8;
-  --text-muted: #475569;
-  --accent: #6366f1;
-  --accent-muted: #a78bfa;
-  --accent-bg: rgba(99, 102, 241, 0.15);
-  --accent-bg-strong: rgba(99, 102, 241, 0.35);
-  --accent-border: rgba(99, 102, 241, 0.4);
-  --success: #0d9488;
-  --warning: #d97706;
-  --error: #ef4444;
-  --error-bg: rgba(239, 68, 68, 0.08);
-  --error-border-subtle: rgba(239, 68, 68, 0.2);
-  --warning-bg: rgba(234, 179, 8, 0.08);
-  --text-on-accent: #fff;
-  --code-bg: var(--surface-elevated);
-  --social-bg: rgba(30, 37, 53, 0.6);
-  --shadow:
-    rgba(0, 0, 0, 0.4) 0 8px 20px -4px, rgba(0, 0, 0, 0.25) 0 3px 6px -1px;
-  --bg: var(--surface-panel);
-  --text-h: var(--text-primary);
-  --text: var(--text-secondary);
-  color-scheme: dark;
-}
-
-[data-theme="dark"] #social .button-icon {
-  filter: invert(1) brightness(2);
-}
-
-/* Explicit light override (user toggled) — forces light even if system is dark */
-[data-theme="light"] {
-  color-scheme: light;
-}
-
 /* ── Base styles ── */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
 html {
   font: 500 16px/1.5 var(--sans);
   letter-spacing: 0.02em;
   color-scheme: light dark;
   color: var(--text-secondary);
   background: var(--surface-base);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 body {

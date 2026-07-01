@@ -1,3 +1,4 @@
+import React from "react";
 import {
   render,
   screen,
@@ -8,6 +9,7 @@ import {
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, afterEach } from "vitest";
 import App from "./App";
+import { ThemeProvider } from "./theme/ThemeProvider";
 import { processJson } from "./worker/jsonLogic";
 import { repairJson } from "./worker/jsonRepair";
 import { SAMPLE_JSON } from "./components/ActionBar";
@@ -135,10 +137,14 @@ vi.mock("./components/RightPane", () => ({
   ),
 }));
 
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+  <ThemeProvider>{children}</ThemeProvider>
+);
+
 // Helper: render App and return commonly used handles.
 function setup() {
   const user = userEvent.setup();
-  render(<App />);
+  render(<App />, { wrapper });
   const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
   const outputArea = screen.getByTestId("output-editor") as HTMLTextAreaElement;
   const formatBtn = screen.getByRole("button", { name: "Format" });
@@ -281,7 +287,7 @@ describe("Auto-format on paste", () => {
 
   it("auto-formats pasted JSON after 300 ms debounce when autoFormat is on", async () => {
     vi.useFakeTimers();
-    render(<App />);
+    render(<App />, { wrapper });
 
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     const outputArea = screen.getByTestId(
@@ -310,7 +316,7 @@ describe("Auto-format on paste", () => {
 
   it("does NOT auto-format when autoFormat is toggled off", async () => {
     vi.useFakeTimers();
-    render(<App />);
+    render(<App />, { wrapper });
 
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     const outputArea = screen.getByTestId(
@@ -336,7 +342,7 @@ describe("Auto-format on paste", () => {
 
   it("does not format before the 300 ms debounce window elapses", async () => {
     vi.useFakeTimers();
-    render(<App />);
+    render(<App />, { wrapper });
 
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     const outputArea = screen.getByTestId(
@@ -358,7 +364,7 @@ describe("Auto-format on paste", () => {
 
 describe("Keyboard shortcut Cmd/Ctrl+Shift+F → Format", () => {
   it("formats the current input when Ctrl+Shift+F is pressed", async () => {
-    render(<App />);
+    render(<App />, { wrapper });
 
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     const outputArea = screen.getByTestId(
@@ -377,7 +383,7 @@ describe("Keyboard shortcut Cmd/Ctrl+Shift+F → Format", () => {
   });
 
   it("formats the current input when Meta+Shift+F (Cmd on Mac) is pressed", async () => {
-    render(<App />);
+    render(<App />, { wrapper });
 
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     const outputArea = screen.getByTestId(
@@ -396,7 +402,7 @@ describe("Keyboard shortcut Cmd/Ctrl+Shift+F → Format", () => {
   });
 
   it("does NOT trigger format when Shift+F is pressed without Ctrl/Meta", async () => {
-    render(<App />);
+    render(<App />, { wrapper });
 
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     const outputArea = screen.getByTestId(
@@ -424,7 +430,7 @@ describe("Auto-validate debounce", () => {
 
   it("shows valid status in status bar after typing valid JSON and 300ms", async () => {
     vi.useFakeTimers();
-    render(<App />);
+    render(<App />, { wrapper });
 
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     fireEvent.change(inputArea, { target: { value: validJson } });
@@ -439,7 +445,7 @@ describe("Auto-validate debounce", () => {
 
   it("shows node count and parse time in status bar for valid JSON", async () => {
     vi.useFakeTimers();
-    render(<App />);
+    render(<App />, { wrapper });
 
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     fireEvent.change(inputArea, { target: { value: validJson } });
@@ -455,7 +461,7 @@ describe("Auto-validate debounce", () => {
 
   it("shows invalid status in status bar after typing invalid JSON and 300ms", async () => {
     vi.useFakeTimers();
-    render(<App />);
+    render(<App />, { wrapper });
 
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     fireEvent.change(inputArea, { target: { value: "not valid" } });
@@ -470,7 +476,7 @@ describe("Auto-validate debounce", () => {
 
   it("does NOT validate before the 300ms debounce window elapses", async () => {
     vi.useFakeTimers();
-    render(<App />);
+    render(<App />, { wrapper });
 
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     fireEvent.change(inputArea, { target: { value: validJson } });
@@ -491,7 +497,7 @@ describe("Auto-validate debounce", () => {
 
 describe("Keyboard shortcut Cmd/Ctrl+Shift+V → Validate", () => {
   it("validates immediately with Ctrl+Shift+V (no debounce wait)", async () => {
-    render(<App />);
+    render(<App />, { wrapper });
 
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     setInput(inputArea, validJson);
@@ -505,7 +511,7 @@ describe("Keyboard shortcut Cmd/Ctrl+Shift+V → Validate", () => {
   });
 
   it("validates immediately with Meta+Shift+V (Cmd on Mac)", async () => {
-    render(<App />);
+    render(<App />, { wrapper });
 
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     setInput(inputArea, validJson);
@@ -519,7 +525,7 @@ describe("Keyboard shortcut Cmd/Ctrl+Shift+V → Validate", () => {
   });
 
   it("does NOT validate when Shift+V is pressed without Ctrl/Meta", async () => {
-    render(<App />);
+    render(<App />, { wrapper });
 
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     setInput(inputArea, validJson);
@@ -540,7 +546,7 @@ describe("Keyboard shortcut Cmd/Ctrl+Shift+V → Validate", () => {
 
 describe("Tab switching on validation result", () => {
   it("switches activeTab to 'error' when invalid JSON is validated via keyboard shortcut", async () => {
-    render(<App />);
+    render(<App />, { wrapper });
 
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     setInput(inputArea, "bad json");
@@ -554,7 +560,7 @@ describe("Tab switching on validation result", () => {
   });
 
   it("does NOT switch to error tab when valid JSON is validated", async () => {
-    render(<App />);
+    render(<App />, { wrapper });
 
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     setInput(inputArea, validJson);
@@ -579,7 +585,7 @@ describe("handleClear resets validation state", () => {
 
   it("shows Ready in status bar after Clear, even if validation was shown", async () => {
     vi.useFakeTimers();
-    render(<App />);
+    render(<App />, { wrapper });
 
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     fireEvent.change(inputArea, { target: { value: validJson } });
@@ -612,7 +618,7 @@ describe("handleSample resets validation state", () => {
 
   it("shows Ready in status bar after Sample (resets nodeCount and validationStatus)", async () => {
     vi.useFakeTimers();
-    render(<App />);
+    render(<App />, { wrapper });
 
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     fireEvent.change(inputArea, { target: { value: validJson } });
@@ -646,14 +652,14 @@ describe("Repair button enabled/disabled state", () => {
   });
 
   it("Repair button is disabled when input is empty (idle state)", () => {
-    render(<App />);
+    render(<App />, { wrapper });
     const repairBtn = screen.getByRole("button", { name: /repair/i });
     expect(repairBtn).toBeDisabled();
   });
 
   it("Repair button is disabled when input is valid JSON (after debounce)", async () => {
     vi.useFakeTimers();
-    render(<App />);
+    render(<App />, { wrapper });
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     fireEvent.change(inputArea, { target: { value: '{"a":1}' } });
     await act(async () => {
@@ -665,7 +671,7 @@ describe("Repair button enabled/disabled state", () => {
 
   it("Repair button is enabled when input is invalid JSON (after debounce)", async () => {
     vi.useFakeTimers();
-    render(<App />);
+    render(<App />, { wrapper });
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     fireEvent.change(inputArea, { target: { value: "not valid json" } });
     await act(async () => {
@@ -683,7 +689,7 @@ describe("Repair button click behavior", () => {
 
   it("clicking Repair with invalid JSON switches activeTab to 'repair'", async () => {
     vi.useFakeTimers();
-    render(<App />);
+    render(<App />, { wrapper });
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     fireEvent.change(inputArea, { target: { value: "not valid json" } });
     await act(async () => {
@@ -698,7 +704,7 @@ describe("Repair button click behavior", () => {
 
   it("clicking Repair with fixable JSON (trailing comma) shows fixes in right pane", async () => {
     vi.useFakeTimers();
-    render(<App />);
+    render(<App />, { wrapper });
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     fireEvent.change(inputArea, { target: { value: '{"a":1,}' } });
     await act(async () => {
@@ -717,7 +723,7 @@ describe("Repair button click behavior", () => {
 
   it("clicking Repair with irreparably broken JSON shows failure state", async () => {
     vi.useFakeTimers();
-    render(<App />);
+    render(<App />, { wrapper });
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     fireEvent.change(inputArea, { target: { value: "{{{{" } });
     await act(async () => {
@@ -733,7 +739,7 @@ describe("Repair button click behavior", () => {
 
   it("clicking 'Accept repair' updates input editor and switches to 'tree' tab", async () => {
     vi.useFakeTimers();
-    render(<App />);
+    render(<App />, { wrapper });
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     fireEvent.change(inputArea, { target: { value: '{"a":1,}' } });
     await act(async () => {
@@ -755,7 +761,7 @@ describe("Repair button click behavior", () => {
 
   it("Clear button resets repairResult (repair panel shows empty state)", async () => {
     vi.useFakeTimers();
-    render(<App />);
+    render(<App />, { wrapper });
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     fireEvent.change(inputArea, { target: { value: '{"a":1,}' } });
     await act(async () => {
@@ -778,7 +784,7 @@ describe("Repair button click behavior", () => {
 
   it("editing input after a successful repair clears the repair result", async () => {
     vi.useFakeTimers();
-    render(<App />);
+    render(<App />, { wrapper });
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     fireEvent.change(inputArea, { target: { value: '{"a":1,}' } });
     await act(async () => {
@@ -809,7 +815,7 @@ describe("Load URL feature", () => {
   });
 
   it("Load URL button is visible and enabled", () => {
-    render(<App />);
+    render(<App />, { wrapper });
     const btn = screen.getByRole("button", { name: /load url/i });
     expect(btn).toBeInTheDocument();
     expect(btn).not.toBeDisabled();
@@ -817,7 +823,7 @@ describe("Load URL feature", () => {
 
   it("clicking Load URL button opens the dialog", async () => {
     const user = userEvent.setup();
-    render(<App />);
+    render(<App />, { wrapper });
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /load url/i }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
@@ -825,7 +831,7 @@ describe("Load URL feature", () => {
 
   it("Cancel button closes the dialog", async () => {
     const user = userEvent.setup();
-    render(<App />);
+    render(<App />, { wrapper });
     await user.click(screen.getByRole("button", { name: /load url/i }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Cancel" }));
@@ -837,7 +843,7 @@ describe("Load URL feature", () => {
     vi.stubGlobal("fetch", fetchSpy);
 
     const user = userEvent.setup();
-    render(<App />);
+    render(<App />, { wrapper });
     await user.click(screen.getByRole("button", { name: /load url/i }));
 
     const urlInput = screen.getByRole("textbox", { name: "URL" });
@@ -866,7 +872,7 @@ describe("Load URL feature", () => {
     );
 
     const user = userEvent.setup();
-    render(<App />);
+    render(<App />, { wrapper });
     await user.click(screen.getByRole("button", { name: /load url/i }));
 
     const urlInput = screen.getByRole("textbox", { name: "URL" });
@@ -892,7 +898,7 @@ describe("Load URL feature", () => {
     );
 
     const user = userEvent.setup();
-    render(<App />);
+    render(<App />, { wrapper });
     await user.click(screen.getByRole("button", { name: /load url/i }));
 
     const urlInput = screen.getByRole("textbox", { name: "URL" });
@@ -917,7 +923,7 @@ describe("Load URL feature", () => {
     vi.stubGlobal("navigator", { ...navigator, onLine: false });
 
     const user = userEvent.setup();
-    render(<App />);
+    render(<App />, { wrapper });
     await user.click(screen.getByRole("button", { name: /load url/i }));
 
     const urlInput = screen.getByRole("textbox", { name: "URL" });
@@ -942,7 +948,7 @@ describe("Load URL feature", () => {
     vi.stubGlobal("navigator", { ...navigator, onLine: true });
 
     const user = userEvent.setup();
-    render(<App />);
+    render(<App />, { wrapper });
     await user.click(screen.getByRole("button", { name: /load url/i }));
 
     const urlInput = screen.getByRole("textbox", { name: "URL" });
@@ -973,7 +979,7 @@ describe("Load URL feature", () => {
     );
 
     const user = userEvent.setup();
-    render(<App />);
+    render(<App />, { wrapper });
     await user.click(screen.getByRole("button", { name: /load url/i }));
 
     const urlInput = screen.getByRole("textbox", { name: "URL" });
@@ -1002,7 +1008,7 @@ describe("Load URL feature", () => {
     );
 
     const user = userEvent.setup();
-    render(<App />);
+    render(<App />, { wrapper });
     await user.click(screen.getByRole("button", { name: /load url/i }));
 
     const urlInput = screen.getByRole("textbox", { name: "URL" });
@@ -1032,7 +1038,7 @@ describe("Load URL feature", () => {
     );
 
     const user = userEvent.setup();
-    render(<App />);
+    render(<App />, { wrapper });
     await user.click(screen.getByRole("button", { name: /load url/i }));
 
     const urlInput = screen.getByRole("textbox", { name: "URL" });
@@ -1061,7 +1067,7 @@ describe("Download button", () => {
   });
 
   it("Download button is visible and enabled", () => {
-    render(<App />);
+    render(<App />, { wrapper });
     const btn = screen.getByRole("button", { name: /download/i });
     expect(btn).toBeInTheDocument();
     expect(btn).not.toBeDisabled();
@@ -1069,7 +1075,7 @@ describe("Download button", () => {
 
   it("Download button triggers a file download with filename output.json when no file is loaded", async () => {
     const user = userEvent.setup();
-    render(<App />);
+    render(<App />, { wrapper });
 
     const { inputArea, outputArea, formatBtn } = {
       inputArea: screen.getByTestId("input-editor") as HTMLTextAreaElement,
@@ -1115,7 +1121,7 @@ describe("Download button", () => {
   });
 
   it("Download button does nothing (no anchor created) when output is empty", async () => {
-    render(<App />);
+    render(<App />, { wrapper });
 
     const createElementSpy = vi.spyOn(document, "createElement");
     const downloadBtn = screen.getByRole("button", { name: /download/i });
@@ -1140,7 +1146,7 @@ describe("Status bar — file size label", () => {
 
   it("shows file size in status bar when input has content (after debounce)", async () => {
     vi.useFakeTimers();
-    render(<App />);
+    render(<App />, { wrapper });
 
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     // ~100 B of content
@@ -1157,7 +1163,7 @@ describe("Status bar — file size label", () => {
 
   it("shows node count, parse time and 'Web Worker' label for valid JSON", async () => {
     vi.useFakeTimers();
-    render(<App />);
+    render(<App />, { wrapper });
 
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     fireEvent.change(inputArea, { target: { value: validJson } });
@@ -1179,14 +1185,14 @@ describe("Status bar — file size label", () => {
 
 describe("Memory warning banner", () => {
   it("does NOT show memory-warning when input is small", () => {
-    render(<App />);
+    render(<App />, { wrapper });
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     fireEvent.change(inputArea, { target: { value: validJson } });
     expect(document.querySelector(".memory-warning")).not.toBeInTheDocument();
   });
 
   it("appears when input length exceeds 10 MB (10_000_000 chars)", () => {
-    render(<App />);
+    render(<App />, { wrapper });
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     // Use a string longer than 10_000_000 characters
     const hugeInput = "x".repeat(10_000_001);
@@ -1195,7 +1201,7 @@ describe("Memory warning banner", () => {
   });
 
   it("memory-warning disappears after Clear", () => {
-    render(<App />);
+    render(<App />, { wrapper });
     const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
     fireEvent.change(inputArea, { target: { value: "x".repeat(10_000_001) } });
     expect(document.querySelector(".memory-warning")).toBeInTheDocument();
@@ -1219,7 +1225,7 @@ describe("Memory warning banner", () => {
 describe("Table View tab", () => {
   it("clicking Code tab switches activeTab to 'code'", async () => {
     const user = userEvent.setup();
-    render(<App />);
+    render(<App />, { wrapper });
 
     const codeBtn = screen.getByRole("button", { name: "Code" });
     await user.click(codeBtn);
@@ -1295,7 +1301,7 @@ describe("Upload button / file picker", () => {
   });
 
   it("hidden file input exists with correct accept attribute", () => {
-    render(<App />);
+    render(<App />, { wrapper });
     const fileInput = document.querySelector(
       'input[type="file"]',
     ) as HTMLInputElement;
@@ -1305,7 +1311,7 @@ describe("Upload button / file picker", () => {
   });
 
   it("clicking Upload button triggers the hidden file input click", async () => {
-    render(<App />);
+    render(<App />, { wrapper });
     const fileInput = document.querySelector(
       'input[type="file"]',
     ) as HTMLInputElement;
@@ -1319,7 +1325,7 @@ describe("Upload button / file picker", () => {
 
   it("selecting a .json file loads content into input and shows file name in header", async () => {
     mockFileReader('{"hello":"world"}');
-    render(<App />);
+    render(<App />, { wrapper });
 
     const fileInput = document.querySelector(
       'input[type="file"]',
@@ -1337,7 +1343,7 @@ describe("Upload button / file picker", () => {
 
   it("selecting a .txt file is accepted without error", async () => {
     mockFileReader("plain text content");
-    render(<App />);
+    render(<App />, { wrapper });
 
     const fileInput = document.querySelector(
       'input[type="file"]',
@@ -1354,7 +1360,7 @@ describe("Upload button / file picker", () => {
 
   it("selecting a .jsonl file is accepted without error", async () => {
     mockFileReader('{"a":1}\n{"b":2}');
-    render(<App />);
+    render(<App />, { wrapper });
 
     const fileInput = document.querySelector(
       'input[type="file"]',
@@ -1374,7 +1380,7 @@ describe("Upload button / file picker", () => {
   });
 
   it("selecting an unsupported extension shows error, does not change input", async () => {
-    render(<App />);
+    render(<App />, { wrapper });
 
     const fileInput = document.querySelector(
       'input[type="file"]',
@@ -1398,7 +1404,7 @@ describe("Upload button / file picker", () => {
   });
 
   it("file exceeding 25 MB shows 'exceeds 25 MB limit' error", async () => {
-    render(<App />);
+    render(<App />, { wrapper });
 
     const fileInput = document.querySelector(
       'input[type="file"]',
@@ -1420,7 +1426,7 @@ describe("Upload button / file picker", () => {
 
   it("FileReader error shows failure banner", async () => {
     mockFileReader("", true /* error */);
-    render(<App />);
+    render(<App />, { wrapper });
 
     const fileInput = document.querySelector(
       'input[type="file"]',
@@ -1452,7 +1458,7 @@ describe("Drag-and-drop", () => {
 
   it("dropping a .json file loads content and shows file name", async () => {
     mockFileReader('{"dropped":true}');
-    render(<App />);
+    render(<App />, { wrapper });
 
     const dropZone = getDropZone();
     const file = makeFile("dropped.json", '{"dropped":true}');
@@ -1469,7 +1475,7 @@ describe("Drag-and-drop", () => {
   });
 
   it("dropping an unsupported file type shows error, does not change input", async () => {
-    render(<App />);
+    render(<App />, { wrapper });
 
     const dropZone = getDropZone();
     const file = makeFile("virus.exe", "binary", "application/octet-stream");
@@ -1489,7 +1495,7 @@ describe("Drag-and-drop", () => {
   });
 
   it("dragOver adds drop-zone--active class to the wrapper div", () => {
-    render(<App />);
+    render(<App />, { wrapper });
     const dropZone = getDropZone();
 
     fireEvent.dragOver(dropZone, { dataTransfer: { dropEffect: "" } });
@@ -1498,7 +1504,7 @@ describe("Drag-and-drop", () => {
   });
 
   it("dragLeave to outside removes drop-zone--active class", () => {
-    render(<App />);
+    render(<App />, { wrapper });
     const dropZone = getDropZone();
 
     fireEvent.dragOver(dropZone, { dataTransfer: { dropEffect: "" } });
@@ -1521,7 +1527,7 @@ describe("File size and progress indicator", () => {
 
   it("file ≤ 5 MB shows no progress bar", async () => {
     mockFileReader('{"small":true}');
-    render(<App />);
+    render(<App />, { wrapper });
 
     const fileInput = document.querySelector(
       'input[type="file"]',
@@ -1557,7 +1563,7 @@ describe("File size and progress indicator", () => {
     }
     vi.stubGlobal("FileReader", MockFileReader);
 
-    render(<App />);
+    render(<App />, { wrapper });
 
     const fileInput = document.querySelector(
       'input[type="file"]',
@@ -1612,7 +1618,7 @@ describe("File name in header", () => {
 
   it("shows file name in header after successful upload", async () => {
     mockFileReader('{"x":1}');
-    render(<App />);
+    render(<App />, { wrapper });
 
     const fileInput = document.querySelector(
       'input[type="file"]',
@@ -1631,7 +1637,7 @@ describe("File name in header", () => {
   it("removes file name from header after Clear", async () => {
     mockFileReader('{"x":1}');
     const user = userEvent.setup();
-    render(<App />);
+    render(<App />, { wrapper });
 
     const fileInput = document.querySelector(
       'input[type="file"]',

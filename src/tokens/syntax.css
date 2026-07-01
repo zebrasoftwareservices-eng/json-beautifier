@@ -1,0 +1,42 @@
+/* Syntax highlight palette — does not change with accent */
+:root,
+[data-theme="light"] {
+  --syntax-key: #7c3aed;
+  --syntax-string: #0d9488;
+  --syntax-number: #d97706;
+  --syntax-boolean: #2563eb;
+  --syntax-null: #9333ea;
+  --syntax-punctuation: #475569;
+  --syntax-bracket: #64748b;
+  --syntax-line-no: #94a3b8;
+  --syntax-line-active: rgba(99, 102, 241, 0.06);
+  --syntax-match: rgba(234, 179, 8, 0.3);
+}
+
+[data-theme="dark"] {
+  --syntax-key: #a78bfa;
+  --syntax-string: #34d399;
+  --syntax-number: #fbbf24;
+  --syntax-boolean: #60a5fa;
+  --syntax-null: #c084fc;
+  --syntax-punctuation: #94a3b8;
+  --syntax-bracket: #64748b;
+  --syntax-line-no: #475569;
+  --syntax-line-active: rgba(139, 92, 246, 0.08);
+  --syntax-match: rgba(251, 191, 36, 0.2);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+    --syntax-key: #a78bfa;
+    --syntax-string: #34d399;
+    --syntax-number: #fbbf24;
+    --syntax-boolean: #60a5fa;
+    --syntax-null: #c084fc;
+    --syntax-punctuation: #94a3b8;
+    --syntax-bracket: #64748b;
+    --syntax-line-no: #475569;
+    --syntax-line-active: rgba(139, 92, 246, 0.08);
+    --syntax-match: rgba(251, 191, 36, 0.2);
+  }
+}

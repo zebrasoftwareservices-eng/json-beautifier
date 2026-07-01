@@ -1,0 +1,34 @@
+/* Maps legacy token names used in existing components to new Brace Design System tokens.
+   Remove each alias once the consuming component migrates to the new name. */
+:root {
+  /* Surface */
+  --surface-base: var(--surface-sunken);
+  --surface-panel: var(--surface-raised);
+  --surface-elevated: var(--surface-overlay);
+
+  /* Border */
+  --border: var(--border-subtle);
+  --border-strong: var(--border-default);
+  --border-stronger: var(--border-strong);
+
+  /* Text */
+  --text-muted: var(--text-tertiary);
+  --text-h: var(--text-primary);
+  --text: var(--text-secondary);
+
+  /* Semantic */
+  --error: var(--danger);
+  --error-bg: var(--danger-bg);
+  --error-border-subtle: var(--danger-border-subtle);
+
+  /* Misc */
+  --code-bg: var(--surface-code);
+  --social-bg: var(--surface-social);
+  --bg: var(--surface-raised);
+
+  /* Toolbar tokens (JSO-27) */
+  --surface-0: var(--surface-sunken);
+  --surface-1: var(--surface-overlay);
+  --focus-shadow: var(--ring-focus);
+  --radius: var(--radius-sm);
+}
