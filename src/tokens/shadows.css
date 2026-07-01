@@ -1,0 +1,5 @@
+/* Shadow tokens — values defined per theme in colors.css */
+:root {
+  /* Elevation aliases (use these in components) */
+  --shadow: var(--shadow-md);
+}

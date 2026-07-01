@@ -5,7 +5,19 @@ import { HelmetProvider } from "react-helmet-async";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { onCLS, onINP, onLCP } from "web-vitals";
 import { initAnalytics, trackEvent } from "./analytics";
+import "./tokens/fonts.css";
+import "./tokens/colors.css";
+import "./tokens/syntax.css";
+import "./tokens/typography.css";
+import "./tokens/spacing.css";
+import "./tokens/radius.css";
+import "./tokens/shadows.css";
+import "./tokens/motion.css";
+import "./tokens/accents.css";
+import "./tokens/aliases.css";
+import "./tokens/base.css";
 import "./index.css";
+import { ThemeProvider } from "./theme/ThemeProvider";
 
 initAnalytics();
 import App from "./App.tsx";
@@ -29,24 +41,32 @@ onLCP(sendToGA);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <HelmetProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/editor" element={<App />} />
-          <Route path="/json-validator" element={<JsonValidatorPage />} />
-          <Route path="/json-repair" element={<JsonRepairPage />} />
-          <Route path="/json-minifier" element={<JsonMinifierPage />} />
-          <Route
-            path="/json-to-yaml"
-            element={<ConverterPage format="yaml" />}
-          />
-          <Route path="/json-to-csv" element={<ConverterPage format="csv" />} />
-          <Route path="/json-to-xml" element={<ConverterPage format="xml" />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </HelmetProvider>
+    <ThemeProvider>
+      <HelmetProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/editor" element={<App />} />
+            <Route path="/json-validator" element={<JsonValidatorPage />} />
+            <Route path="/json-repair" element={<JsonRepairPage />} />
+            <Route path="/json-minifier" element={<JsonMinifierPage />} />
+            <Route
+              path="/json-to-yaml"
+              element={<ConverterPage format="yaml" />}
+            />
+            <Route
+              path="/json-to-csv"
+              element={<ConverterPage format="csv" />}
+            />
+            <Route
+              path="/json-to-xml"
+              element={<ConverterPage format="xml" />}
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </HelmetProvider>
+    </ThemeProvider>
     <SpeedInsights />
   </StrictMode>,
 );

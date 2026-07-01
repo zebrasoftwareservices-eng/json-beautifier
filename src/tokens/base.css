@@ -1,0 +1,17 @@
+/* Focus ring — applied via box-shadow on :focus-visible, never outline */
+:root {
+  --ring-focus: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 35%, transparent);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
