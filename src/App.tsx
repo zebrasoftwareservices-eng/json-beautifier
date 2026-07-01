@@ -746,6 +746,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
                 onPaste={handlePaste}
                 onSample={handleSample}
                 onLoadUrl={() => setUrlDialogOpen(true)}
+                onUpload={handleUploadClick}
               />
             )}
             {isDragging && (

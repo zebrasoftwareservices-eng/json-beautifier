@@ -4,12 +4,14 @@ interface EditorEmptyStateProps {
   onPaste: () => void;
   onSample: () => void;
   onLoadUrl: () => void;
+  onUpload: () => void;
 }
 
 export function EditorEmptyState({
   onPaste,
   onSample,
   onLoadUrl,
+  onUpload,
 }: EditorEmptyStateProps) {
   return (
     <div
@@ -39,6 +41,14 @@ export function EditorEmptyState({
           aria-label="Load from URL"
         >
           Load URL
+        </button>
+        <button
+          type="button"
+          className="secondary"
+          onClick={onUpload}
+          aria-label="Upload file"
+        >
+          Upload
         </button>
       </div>
     </div>
