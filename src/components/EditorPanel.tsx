@@ -1,10 +1,15 @@
-import { CodeEditor, type CodeEditorError } from "./CodeEditor";
+import {
+  CodeEditor,
+  type CodeEditorCursor,
+  type CodeEditorError,
+} from "./CodeEditor";
 import "./EditorPanel.css";
 
 interface EditorPanelProps {
   value: string;
   onChange: (value: string) => void;
   onPaste?: (value: string) => void;
+  onCursorChange?: (cursor: CodeEditorCursor) => void;
   error?: CodeEditorError | null;
   placeholder?: string;
   lineCount: number;
@@ -21,6 +26,7 @@ export function EditorPanel({
   value,
   onChange,
   onPaste,
+  onCursorChange,
   error,
   placeholder,
   lineCount,
@@ -55,6 +61,7 @@ export function EditorPanel({
           value={value}
           onChange={onChange}
           onPaste={onPaste}
+          onCursorChange={onCursorChange}
           error={error}
           placeholder={placeholder}
         />

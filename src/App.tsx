@@ -13,6 +13,8 @@ import {
   type PaletteCommand,
 } from "./components/CommandPalette";
 import { IdentityBar } from "./components/IdentityBar";
+import { StatusBar } from "./components/StatusBar";
+import type { CodeEditorCursor } from "./components/CodeEditor";
 import {
   RightPane,
   type TabId,
@@ -59,13 +61,11 @@ export default function App({ initialTab = "tree" }: AppProps) {
   const [output, setOutput] = useState("");
   const [error, setError] = useState<CodeEditorError | null>(null);
   const [indent, setIndent] = useState<number | "\t">(2);
-  const [parseTimeMs, setParseTimeMs] = useState<number | null>(null);
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
   const [copyLabel, setCopyLabel] = useState("Copy");
   const [autoFormat, setAutoFormat] = useState(true);
   const [fileName, setFileName] = useState<string | null>(null);
-  const [nodeCount, setNodeCount] = useState<number | null>(null);
   const [validationStatus, setValidationStatus] = useState<
     "idle" | "valid" | "invalid"
   >("idle");
@@ -78,6 +78,10 @@ export default function App({ initialTab = "tree" }: AppProps) {
   const [hasLargeIntegers, setHasLargeIntegers] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [paletteKey, setPaletteKey] = useState(0);
+  const [cursor, setCursor] = useState<CodeEditorCursor>({
+    line: 1,
+    column: 1,
+  });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const latestLoadIdRef = useRef(0);
@@ -101,7 +105,6 @@ export default function App({ initialTab = "tree" }: AppProps) {
         const result = await process("beautify", toFormat, indent);
         if (result.ok) {
           setOutput(result.result);
-          setParseTimeMs(result.parseTimeMs);
           setHasLargeIntegers(result.hasLargeIntegers ?? false);
           setError(null);
           setActiveTab("code");
@@ -114,7 +117,6 @@ export default function App({ initialTab = "tree" }: AppProps) {
             column: result.column,
           });
           setOutput("");
-          setParseTimeMs(null);
           setHasLargeIntegers(false);
           setValidationStatus("invalid");
           return false;
@@ -122,7 +124,6 @@ export default function App({ initialTab = "tree" }: AppProps) {
       } catch {
         setError({ message: "Formatting failed — please try again." });
         setOutput("");
-        setParseTimeMs(null);
         setHasLargeIntegers(false);
         setValidationStatus("invalid");
         return false;
@@ -166,7 +167,6 @@ export default function App({ initialTab = "tree" }: AppProps) {
       if (loadId !== latestLoadIdRef.current) return;
       setInput(text);
       setOutput("");
-      setParseTimeMs(null);
       setFileName(file.name);
       track.fileUploaded();
     } catch {
@@ -223,7 +223,6 @@ export default function App({ initialTab = "tree" }: AppProps) {
     }
     setInput(result.text);
     setOutput("");
-    setParseTimeMs(null);
     setFileName(url);
     setUrlDialogOpen(false);
     track.urlLoaded();
@@ -237,7 +236,6 @@ export default function App({ initialTab = "tree" }: AppProps) {
       const result = await process("minify", input);
       if (result.ok) {
         setOutput(result.result);
-        setParseTimeMs(result.parseTimeMs);
         setHasLargeIntegers(result.hasLargeIntegers ?? false);
         setError(null);
         setActiveTab("code");
@@ -248,13 +246,11 @@ export default function App({ initialTab = "tree" }: AppProps) {
           column: result.column,
         });
         setOutput("");
-        setParseTimeMs(null);
         setValidationStatus("invalid");
       }
     } catch {
       setError({ message: "Minify failed — please try again." });
       setOutput("");
-      setParseTimeMs(null);
       setValidationStatus("invalid");
     } finally {
       setProcessing(false);
@@ -304,10 +300,8 @@ export default function App({ initialTab = "tree" }: AppProps) {
     setInput("");
     setOutput("");
     setError(null);
-    setParseTimeMs(null);
     setCopyLabel("Copy");
     setFileName(null);
-    setNodeCount(null);
     setValidationStatus("idle");
     setRepairResult(null);
     setHasLargeIntegers(false);
@@ -364,9 +358,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
     setInput(SAMPLE_JSON);
     setOutput("");
     setError(null);
-    setParseTimeMs(null);
     setFileName(null);
-    setNodeCount(null);
     setValidationStatus("idle");
     setRepairResult(null);
     setHasLargeIntegers(false);
@@ -388,8 +380,6 @@ export default function App({ initialTab = "tree" }: AppProps) {
       const validateId = ++latestValidateIdRef.current;
       if (!toValidate.trim()) {
         setValidationStatus("idle");
-        setNodeCount(null);
-        setParseTimeMs(null);
         setHasLargeIntegers(false);
         setError(null);
         setPartialJson(null);
@@ -399,8 +389,6 @@ export default function App({ initialTab = "tree" }: AppProps) {
       if (validateId !== latestValidateIdRef.current) return; // discard stale
       if (result.ok) {
         setError(null);
-        setNodeCount(result.nodeCount ?? null);
-        setParseTimeMs(result.parseTimeMs);
         setHasLargeIntegers(result.hasLargeIntegers ?? false);
         setValidationStatus("valid");
         setPartialJson(null);
@@ -417,8 +405,6 @@ export default function App({ initialTab = "tree" }: AppProps) {
           column: result.column,
           suggestion: suggestion ?? undefined,
         });
-        setNodeCount(null);
-        setParseTimeMs(null);
         setHasLargeIntegers(false);
         setValidationStatus("invalid");
         if (switchTab) setActiveTab("error");
@@ -564,6 +550,8 @@ export default function App({ initialTab = "tree" }: AppProps) {
 
   const memoryWarning = inputSizeBytes > 10_000_000;
 
+  const indentLabel = indent === "\t" ? "Tab" : `${indent} spaces`;
+
   const bigintNote = hasLargeIntegers
     ? "⚠ Large integers — precision preserved"
     : null;
@@ -658,32 +646,6 @@ export default function App({ initialTab = "tree" }: AppProps) {
     ],
   );
 
-  const statusText = processing
-    ? `Processing… · Web Worker`
-    : validationStatus === "valid" && nodeCount !== null && parseTimeMs !== null
-      ? [
-          "✓ Valid",
-          bigintNote,
-          sizeLabel,
-          `${nodeCount} node${nodeCount === 1 ? "" : "s"}`,
-          `${parseTimeMs} ms`,
-          "Web Worker",
-        ]
-          .filter(Boolean)
-          .join(" · ")
-      : validationStatus === "invalid" && error
-        ? error.line != null
-          ? `✗ Invalid JSON — line ${error.line}${error.column != null ? `, col ${error.column}` : ""}: ${error.message}`
-          : `✗ Invalid JSON: ${error.message}`
-        : [
-            sizeLabel
-              ? `Ready · ${sizeLabel} — ${m}K for commands`
-              : `Ready — ${m}K for commands`,
-            bigintNote,
-          ]
-            .filter(Boolean)
-            .join(" · ");
-
   return (
     <>
       <input
@@ -728,6 +690,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
                 ⚠ Large document ({sizeLabel}) — performance may be affected
               </div>
             )}
+            {bigintNote && <div className="memory-warning">{bigintNote}</div>}
             {errorLabel && <div className="error-banner">{errorLabel}</div>}
           </>
         }
@@ -736,6 +699,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
             value={input}
             onChange={setInput}
             onPaste={handleEditorPaste}
+            onCursorChange={setCursor}
             error={error}
             placeholder={'Paste or type JSON here…\n\n{"key": "value"}'}
             lineCount={input ? input.split("\n").length : 0}
@@ -771,12 +735,19 @@ export default function App({ initialTab = "tree" }: AppProps) {
           />
         }
         statusBar={
-          <div className="status-bar">
-            <span>{statusText}</span>
-            <span className="status-bar__privacy">
-              Processed locally · Load URL requests the remote host directly
-            </span>
-          </div>
+          <StatusBar
+            state={validationStatus}
+            errorCount={validationStatus === "invalid" ? 1 : 0}
+            lineCount={input ? input.split("\n").length : 0}
+            sizeLabel={sizeLabel}
+            cursorLine={cursor.line}
+            cursorColumn={cursor.column}
+            indentLabel={indentLabel}
+            onOpenPalette={() => {
+              setPaletteOpen(true);
+              setPaletteKey((k) => k + 1);
+            }}
+          />
         }
         modals={
           <>

@@ -439,10 +439,10 @@ describe("Auto-validate debounce", () => {
     });
 
     const statusBar = document.querySelector(".status-bar");
-    expect(statusBar?.textContent).toMatch(/✓ Valid/);
+    expect(statusBar?.textContent).toMatch(/Valid JSON/);
   });
 
-  it("shows node count and parse time in status bar for valid JSON", async () => {
+  it("shows line count and encoding stats in status bar for valid JSON", async () => {
     vi.useFakeTimers();
     render(<App />, { wrapper });
 
@@ -454,8 +454,8 @@ describe("Auto-validate debounce", () => {
     });
 
     const statusBar = document.querySelector(".status-bar");
-    expect(statusBar?.textContent).toMatch(/node/);
-    expect(statusBar?.textContent).toMatch(/\d+ ms/);
+    expect(statusBar?.textContent).toMatch(/\d+ lines?/);
+    expect(statusBar?.textContent).toMatch(/UTF-8/);
   });
 
   it("shows invalid status in status bar after typing invalid JSON and 300ms", async () => {
@@ -470,7 +470,7 @@ describe("Auto-validate debounce", () => {
     });
 
     const statusBar = document.querySelector(".status-bar");
-    expect(statusBar?.textContent).toMatch(/✗ Invalid JSON/);
+    expect(statusBar?.textContent).toMatch(/Invalid JSON/);
   });
 
   it("does NOT validate before the 300ms debounce window elapses", async () => {
@@ -506,7 +506,7 @@ describe("Keyboard shortcut Cmd/Ctrl+Shift+V → Validate", () => {
     });
 
     const statusBar = document.querySelector(".status-bar");
-    expect(statusBar?.textContent).toMatch(/✓ Valid/);
+    expect(statusBar?.textContent).toMatch(/Valid JSON/);
   });
 
   it("validates immediately with Meta+Shift+V (Cmd on Mac)", async () => {
@@ -520,7 +520,7 @@ describe("Keyboard shortcut Cmd/Ctrl+Shift+V → Validate", () => {
     });
 
     const statusBar = document.querySelector(".status-bar");
-    expect(statusBar?.textContent).toMatch(/✓ Valid/);
+    expect(statusBar?.textContent).toMatch(/Valid JSON/);
   });
 
   it("does NOT validate when Shift+V is pressed without Ctrl/Meta", async () => {
@@ -594,7 +594,7 @@ describe("handleClear resets validation state", () => {
     });
 
     const statusBar = document.querySelector(".status-bar");
-    expect(statusBar?.textContent).toMatch(/✓ Valid/);
+    expect(statusBar?.textContent).toMatch(/Valid JSON/);
 
     // Use fireEvent (synchronous) to avoid userEvent+advanceTimers deadlock.
     // Two separate acts so React re-renders between arm and confirm clicks.
@@ -632,7 +632,7 @@ describe("handleSample resets validation state", () => {
     });
 
     // Sample JSON is valid — status transitions from idle to Valid.
-    expect(statusBar?.textContent).toMatch(/✓ Valid/);
+    expect(statusBar?.textContent).toMatch(/Valid JSON/);
   });
 });
 
@@ -1157,7 +1157,7 @@ describe("Status bar — file size label", () => {
     expect(statusBar?.textContent).toMatch(/\d+(\.\d+)? (B|KB|MB)/);
   });
 
-  it("shows node count, parse time and 'Web Worker' label for valid JSON", async () => {
+  it("shows 'Processed locally' trust signal for valid JSON", async () => {
     vi.useFakeTimers();
     render(<App />, { wrapper });
 
@@ -1169,9 +1169,7 @@ describe("Status bar — file size label", () => {
     });
 
     const statusBar = document.querySelector(".status-bar");
-    expect(statusBar?.textContent).toMatch(/node/);
-    expect(statusBar?.textContent).toMatch(/\d+ ms/);
-    expect(statusBar?.textContent).toMatch(/Web Worker/);
+    expect(statusBar?.textContent).toMatch(/Processed locally/);
   });
 });
 
