@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
-import { EditorState } from "@codemirror/state";
+import { EditorState, StateEffect, StateField } from "@codemirror/state";
 import {
   EditorView,
+  Decoration,
+  type DecorationSet,
   lineNumbers,
   highlightActiveLine,
   highlightActiveLineGutter,
@@ -23,6 +25,31 @@ export interface CodeEditorError {
   column?: number;
   suggestion?: string;
 }
+
+const setErrorLine = StateEffect.define<number | null>();
+
+const errorLineDeco = Decoration.line({
+  attributes: { class: "cm-error-line" },
+});
+
+const errorLineField = StateField.define<DecorationSet>({
+  create() {
+    return Decoration.none;
+  },
+  update(deco, tr) {
+    deco = deco.map(tr.changes);
+    for (const effect of tr.effects) {
+      if (effect.is(setErrorLine)) {
+        if (effect.value == null) return Decoration.none;
+        const lineNum = Math.max(1, Math.min(effect.value, tr.state.doc.lines));
+        const line = tr.state.doc.line(lineNum);
+        return Decoration.set([errorLineDeco.range(line.from)]);
+      }
+    }
+    return deco;
+  },
+  provide: (f) => EditorView.decorations.from(f),
+});
 
 interface CodeEditorProps {
   value: string;
@@ -72,6 +99,7 @@ export function CodeEditor({
       json(),
       ...(prefersDark ? [oneDark] : []),
       linter(() => []),
+      errorLineField,
       keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap]),
       EditorView.updateListener.of((update) => {
         if (!update.docChanged) {
@@ -107,6 +135,11 @@ export function CodeEditor({
         },
         ".cm-content": { padding: "12px 0" },
         "&.cm-focused": { outline: "none" },
+        ".cm-error-line": { background: "var(--danger-bg)" },
+        ".cm-lintRange-error": {
+          backgroundImage: "none",
+          textDecoration: "wavy underline var(--danger)",
+        },
       }),
     ];
 
@@ -149,7 +182,9 @@ export function CodeEditor({
     if (!view) return;
 
     if (!error) {
-      view.dispatch(setDiagnostics(view.state, []));
+      view.dispatch(setDiagnostics(view.state, []), {
+        effects: setErrorLine.of(null),
+      });
       return;
     }
 
@@ -170,7 +205,9 @@ export function CodeEditor({
         message: error.message,
       },
     ];
-    view.dispatch(setDiagnostics(view.state, diagnostics));
+    view.dispatch(setDiagnostics(view.state, diagnostics), {
+      effects: setErrorLine.of(error.line ?? null),
+    });
   }, [error]);
 
   return <div ref={containerRef} className="code-editor" />;

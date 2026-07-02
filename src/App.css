@@ -443,53 +443,6 @@ button.toolbar-btn--clear-armed:hover:not(:disabled) {
   display: none;
 }
 
-/* ── Drop zone ── */
-.drop-zone {
-  position: relative;
-  height: 100%;
-}
-
-.drop-zone--active .code-editor {
-  opacity: 0.4;
-}
-
-.drop-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--accent-bg);
-  border: 2px dashed var(--accent);
-  border-radius: 4px;
-  pointer-events: none;
-  z-index: 10;
-}
-
-.drop-overlay span {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--accent);
-  letter-spacing: 0.02em;
-}
-
-/* ── Upload progress bar ── */
-.upload-progress {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--accent-bg);
-  z-index: 20;
-}
-
-.upload-progress__bar {
-  height: 100%;
-  background: var(--accent);
-  transition: width 0.1s linear;
-}
-
 /* ── CodeMirror editor wrapper (panel surface) ── */
 .code-editor {
   height: 100%;

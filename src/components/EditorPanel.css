@@ -1,0 +1,66 @@
+.editor-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.editor-panel__label {
+  flex: 0 0 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  background: var(--surface-inset);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+}
+
+.editor-panel .drop-zone {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.editor-panel .drop-zone--active .code-editor {
+  opacity: 0.4;
+}
+
+.editor-panel .drop-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-bg);
+  border: 2px dashed var(--accent);
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.editor-panel .drop-overlay span {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+}
+
+.editor-panel .upload-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--accent-bg);
+  z-index: 20;
+}
+
+.editor-panel .upload-progress__bar {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.1s linear;
+}

@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import "./App.css";
 import { useJsonWorker } from "./worker/useJsonWorker";
-import { CodeEditor, type CodeEditorError } from "./components/CodeEditor";
+import type { CodeEditorError } from "./components/CodeEditor";
+import { EditorPanel } from "./components/EditorPanel";
 import { AppShell } from "./components/AppShell";
 import { SAMPLE_JSON } from "./components/ActionBar";
 import { ActionToolbar } from "./components/ActionToolbar";
@@ -731,48 +732,28 @@ export default function App({ initialTab = "tree" }: AppProps) {
           </>
         }
         left={
-          <div
-            className={`drop-zone${isDragging ? " drop-zone--active" : ""}`}
+          <EditorPanel
+            value={input}
+            onChange={setInput}
+            onPaste={handleEditorPaste}
+            error={error}
+            placeholder={'Paste or type JSON here…\n\n{"key": "value"}'}
+            lineCount={input ? input.split("\n").length : 0}
+            sizeLabel={sizeLabel}
+            isDragging={isDragging}
             onDragOver={handleDragOver}
-            onDragEnter={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-          >
-            <CodeEditor
-              value={input}
-              onChange={setInput}
-              onPaste={handleEditorPaste}
-              error={error}
-              placeholder={'Paste or type JSON here…\n\n{"key": "value"}'}
-            />
-            {!input && (
+            uploadProgress={uploadProgress}
+            emptyState={
               <EditorEmptyState
                 onPaste={handlePaste}
                 onSample={handleSample}
                 onLoadUrl={() => setUrlDialogOpen(true)}
                 onUpload={handleUploadClick}
               />
-            )}
-            {isDragging && (
-              <div className="drop-overlay" aria-hidden="true">
-                <span>Drop JSON file to load</span>
-              </div>
-            )}
-            {uploadProgress !== null && (
-              <div
-                className="upload-progress"
-                role="progressbar"
-                aria-valuenow={uploadProgress}
-                aria-valuemin={0}
-                aria-valuemax={100}
-              >
-                <div
-                  className="upload-progress__bar"
-                  style={{ width: `${uploadProgress}%` }}
-                />
-              </div>
-            )}
-          </div>
+            }
+          />
         }
         right={
           <RightPane
