@@ -48,9 +48,10 @@ export function StatusBar({
       <div className="status-bar__left">
         <span
           className={`status-bar__dot ${DOT_CLASS[state]}`}
-          aria-hidden="true"
+          role="status"
+          aria-label={stateLabel}
         />
-        <span role="status">{stateLabel}</span>
+        <span aria-hidden="true">{stateLabel}</span>
         {stats.map((stat) => (
           <span
             key={stat}

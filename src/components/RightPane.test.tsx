@@ -93,6 +93,24 @@ describe("RightPane — ErrorPanel", () => {
       document.querySelector(".error-panel__snippet"),
     ).not.toBeInTheDocument();
   });
+
+  it('exposes role="alert" on the error panel when an error is present', () => {
+    const error: CodeEditorError = { message: "Unexpected token" };
+    renderRightPane({ error });
+    const alert = screen.getByRole("alert");
+    expect(alert).toBeInTheDocument();
+    expect(alert).toHaveClass("error-panel");
+  });
+
+  it('does not expose role="alert" when error is null', () => {
+    renderRightPane({ error: null });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it('does not expose role="alert" when error is undefined', () => {
+    renderRightPane({ error: undefined });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
 });
 
 describe("RightPane — ErrorBanner action buttons", () => {

@@ -90,7 +90,7 @@
 
 .identity-bar__search:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
+  box-shadow: var(--ring-focus);
   border-color: var(--accent-border);
 }
 
