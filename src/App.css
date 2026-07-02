@@ -1251,31 +1251,33 @@ mark.tree-match {
   border-radius: 2px;
 }
 
-/* ── Responsive: stack on mobile ── */
-@media (max-width: 700px) {
-  .split-pane {
-    flex-direction: column;
+/* ── Responsive: mobile single-pane layout ── */
+@media (max-width: 719px) {
+  /* Show only the active pane; hide the other */
+  .split-pane--mobile-left .split-right,
+  .split-pane--mobile-right .split-left {
+    display: none !important;
   }
 
-  .split-left,
-  .split-right {
+  .split-pane--mobile-left .split-left,
+  .split-pane--mobile-right .split-right {
     width: 100% !important;
-    height: 50%;
+    height: 100% !important;
   }
 
-  .split-handle {
-    width: 100%;
-    height: 4px;
-    cursor: row-resize;
+  /* Hide drag handle on mobile — layout is toggled, not dragged */
+  .split-pane .split-handle {
+    display: none;
   }
 
   .right-pane {
     border-left: none;
-    border-top: 1px solid var(--border);
   }
 
-  .action-bar {
-    gap: 3px;
+  /* Touch target compliance for buttons in scrollable content */
+  .error-summary__fix-btn,
+  .error-summary__jump-btn {
+    min-height: 44px;
   }
 }
 

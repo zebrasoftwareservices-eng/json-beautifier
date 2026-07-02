@@ -127,6 +127,9 @@ export function ActionToolbar({
         </DwellButton>
       </div>
 
+      {/* Row break at tablet: forces indent/auto-format/utility onto row 2 */}
+      <span className="action-toolbar__row-break" aria-hidden />
+
       {/* Indent SegmentedControl */}
       <div
         className="segmented segmented--indent"

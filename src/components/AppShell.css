@@ -27,3 +27,70 @@
   height: 30px;
   flex-shrink: 0;
 }
+
+/* ── Input / Output toggle — mobile only ── */
+.app-shell__mobile-toggle {
+  display: none;
+}
+
+.app-shell__mobile-segmented {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--border);
+  background: var(--surface-panel);
+}
+
+.app-shell__mobile-tab {
+  flex: 1;
+  min-height: 36px;
+  padding: 0 32px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: 500 13px var(--sans);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+  white-space: nowrap;
+}
+
+.app-shell__mobile-tab:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.app-shell__mobile-tab--active {
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.app-shell__mobile-tab:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+@media (max-width: 719px) {
+  .app-shell__identity-bar {
+    height: 48px;
+  }
+
+  .app-shell__mobile-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    background: var(--surface-elevated);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  /* Increase touch targets for mobile tab buttons */
+  .app-shell__mobile-tab {
+    min-height: 44px;
+  }
+}

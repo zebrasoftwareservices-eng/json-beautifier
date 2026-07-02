@@ -26,6 +26,7 @@ import {
   type TabId,
   type RepairResult,
 } from "./components/RightPane";
+import { MobileActionBar } from "./components/MobileActionBar";
 import { repairJson } from "./lib/json/repair";
 import { getSuggestion } from "./lib/json/suggestions";
 import { fetchJsonUrl } from "./lib/json/load-url";
@@ -94,6 +95,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
   const [toast, setToast] = useState<{ id: number; message: string } | null>(
     null,
   );
+  const [mobilePane, setMobilePane] = useState<"left" | "right">("left");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const latestLoadIdRef = useRef(0);
@@ -133,6 +135,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
           setHasLargeIntegers(result.hasLargeIntegers ?? false);
           setError(null);
           setActiveTab("code");
+          setMobilePane("right");
           track.jsonFormatted();
           return true;
         } else {
@@ -264,6 +267,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
         setHasLargeIntegers(result.hasLargeIntegers ?? false);
         setError(null);
         setActiveTab("code");
+        setMobilePane("right");
       } else {
         setError({
           message: result.message,
@@ -792,6 +796,21 @@ export default function App({ initialTab = "tree" }: AppProps) {
         aria-hidden="true"
       />
       <AppShell
+        mobilePane={mobilePane}
+        onMobilePaneChange={setMobilePane}
+        mobileBar={
+          <MobileActionBar
+            onFormat={() => handleFormat()}
+            onCopy={handleCopy}
+            onOpenPalette={() => {
+              setPaletteOpen(true);
+              setPaletteKey((k) => k + 1);
+            }}
+            processing={processing}
+            hasInput={input.trim().length > 0}
+            copyLabel={copyLabel}
+          />
+        }
         identityBar={
           <IdentityBar
             fileName={fileName}
