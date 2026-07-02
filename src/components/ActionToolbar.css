@@ -84,6 +84,16 @@
   color: var(--text-primary);
 }
 
+.segmented__item--suggested {
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.segmented__item--suggested:hover:not(:disabled) {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
 /* ── Auto-format switch ── */
 .auto-format {
   display: flex;

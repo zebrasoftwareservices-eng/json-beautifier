@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { EditorState, StateEffect, StateField } from "@codemirror/state";
+import { EditorState, StateEffect, StateField, Text } from "@codemirror/state";
 import {
   EditorView,
   Decoration,
@@ -24,6 +24,18 @@ export interface CodeEditorError {
   line?: number;
   column?: number;
   suggestion?: string;
+}
+
+// Clamp a (possibly out-of-range) line/column pair to a valid doc offset.
+function clampPositionToLine(
+  doc: Text,
+  line: number,
+  column: number | undefined,
+): number {
+  const lineNum = Math.max(1, Math.min(line, doc.lines));
+  const lineObj = doc.line(lineNum);
+  const col = Math.max(0, (column ?? 1) - 1);
+  return Math.max(lineObj.from, Math.min(lineObj.from + col, lineObj.to));
 }
 
 const setErrorLine = StateEffect.define<number | null>();
@@ -51,33 +63,51 @@ const errorLineField = StateField.define<DecorationSet>({
   provide: (f) => EditorView.decorations.from(f),
 });
 
+export interface CodeEditorCursor {
+  line: number;
+  column: number;
+}
+
+export interface CodeEditorJumpTarget {
+  line: number;
+  column?: number;
+  /** Bump this on every "jump" request so repeated clicks on the same location retrigger the effect. */
+  nonce: number;
+}
+
 interface CodeEditorProps {
   value: string;
   onChange?: (value: string) => void;
   onPaste?: (value: string) => void;
+  onCursorChange?: (cursor: CodeEditorCursor) => void;
   error?: CodeEditorError | null;
   readOnly?: boolean;
   placeholder?: string;
   wrap?: boolean;
+  jumpTarget?: CodeEditorJumpTarget | null;
 }
 
 export function CodeEditor({
   value,
   onChange,
   onPaste,
+  onCursorChange,
   error,
   readOnly = false,
   placeholder,
   wrap = false,
+  jumpTarget,
 }: CodeEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
   const onPasteRef = useRef(onPaste);
+  const onCursorChangeRef = useRef(onCursorChange);
   const justPastedRef = useRef(false);
   useEffect(() => {
     onChangeRef.current = onChange;
     onPasteRef.current = onPaste;
+    onCursorChangeRef.current = onCursorChange;
   });
 
   // Create editor on mount
@@ -104,15 +134,23 @@ export function CodeEditor({
       errorLineField,
       keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap]),
       EditorView.updateListener.of((update) => {
-        if (!update.docChanged) {
-          if (justPastedRef.current) justPastedRef.current = false;
-          return;
-        }
-        const newValue = update.state.doc.toString();
-        onChangeRef.current?.(newValue);
-        if (justPastedRef.current) {
+        if (update.docChanged) {
+          const newValue = update.state.doc.toString();
+          onChangeRef.current?.(newValue);
+          if (justPastedRef.current) {
+            justPastedRef.current = false;
+            onPasteRef.current?.(newValue);
+          }
+        } else if (justPastedRef.current) {
           justPastedRef.current = false;
-          onPasteRef.current?.(newValue);
+        }
+        if (update.docChanged || update.selectionSet) {
+          const pos = update.state.selection.main.head;
+          const line = update.state.doc.lineAt(pos);
+          onCursorChangeRef.current?.({
+            line: line.number,
+            column: pos - line.from + 1,
+          });
         }
       }),
       EditorView.domEventHandlers({
@@ -195,13 +233,10 @@ export function CodeEditor({
     }
 
     const doc = view.state.doc;
-    let from = 0;
-    if (error.line != null) {
-      const lineNum = Math.max(1, Math.min(error.line, doc.lines));
-      const lineObj = doc.line(lineNum);
-      const col = Math.max(0, (error.column ?? 1) - 1);
-      from = Math.max(lineObj.from, Math.min(lineObj.from + col, lineObj.to));
-    }
+    const from =
+      error.line != null
+        ? clampPositionToLine(doc, error.line, error.column)
+        : 0;
 
     const diagnostics: Diagnostic[] = [
       {
@@ -215,6 +250,23 @@ export function CodeEditor({
       effects: setErrorLine.of(error.line ?? null),
     });
   }, [error]);
+
+  // Scroll to and focus a requested line/column (e.g. "Jump to error")
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view || !jumpTarget) return;
+    const pos = clampPositionToLine(
+      view.state.doc,
+      jumpTarget.line,
+      jumpTarget.column,
+    );
+    view.dispatch({
+      selection: { anchor: pos },
+      scrollIntoView: true,
+    });
+    view.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jumpTarget?.nonce]);
 
   return <div ref={containerRef} className="code-editor" />;
 }

@@ -258,3 +258,94 @@ describe("EditorEmptyState — accessibility", () => {
     ).toBeInTheDocument();
   });
 });
+
+// ── 5. Heading ───────────────────────────────────────────────────────────────
+
+describe("EditorEmptyState — heading", () => {
+  it("renders the 'Nothing to format yet' heading", () => {
+    render(
+      <EditorEmptyState
+        onPaste={vi.fn()}
+        onSample={vi.fn()}
+        onLoadUrl={vi.fn()}
+        onUpload={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Nothing to format yet")).toBeInTheDocument();
+  });
+
+  it("applies the editor-empty-state__heading class to the heading", () => {
+    render(
+      <EditorEmptyState
+        onPaste={vi.fn()}
+        onSample={vi.fn()}
+        onLoadUrl={vi.fn()}
+        onUpload={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Nothing to format yet")).toHaveClass(
+      "editor-empty-state__heading",
+    );
+  });
+});
+
+// ── 6. Decorative grid background ─────────────────────────────────────────────
+
+describe("EditorEmptyState — decorative grid", () => {
+  it("renders a .editor-empty-state__grid element marked aria-hidden", () => {
+    render(
+      <EditorEmptyState
+        onPaste={vi.fn()}
+        onSample={vi.fn()}
+        onLoadUrl={vi.fn()}
+        onUpload={vi.fn()}
+      />,
+    );
+    const grid = document.querySelector(".editor-empty-state__grid");
+    expect(grid).toBeInTheDocument();
+    expect(grid).toHaveAttribute("aria-hidden", "true");
+  });
+});
+
+// ── 7. Keyboard hint ───────────────────────────────────────────────────────────
+
+describe("EditorEmptyState — keyboard hint", () => {
+  it("shows a 'Ctrl+V' kbd hint inside the Paste button on non-Mac platforms", () => {
+    render(
+      <EditorEmptyState
+        onPaste={vi.fn()}
+        onSample={vi.fn()}
+        onLoadUrl={vi.fn()}
+        onUpload={vi.fn()}
+      />,
+    );
+    const pasteButton = screen.getByRole("button", {
+      name: "Paste from clipboard",
+    });
+    const kbd = pasteButton.querySelector("kbd");
+    expect(kbd).toBeInTheDocument();
+    expect(kbd).toHaveTextContent("Ctrl+V");
+    expect(kbd).toHaveClass("editor-empty-state__kbd");
+  });
+
+  it("does not render the kbd hint inside the other buttons", () => {
+    render(
+      <EditorEmptyState
+        onPaste={vi.fn()}
+        onSample={vi.fn()}
+        onLoadUrl={vi.fn()}
+        onUpload={vi.fn()}
+      />,
+    );
+    const sampleButton = screen.getByRole("button", {
+      name: "Try sample JSON",
+    });
+    const loadUrlButton = screen.getByRole("button", {
+      name: "Load from URL",
+    });
+    const uploadButton = screen.getByRole("button", { name: "Upload file" });
+    expect(sampleButton.querySelector("kbd")).not.toBeInTheDocument();
+    expect(loadUrlButton.querySelector("kbd")).not.toBeInTheDocument();
+    expect(uploadButton.querySelector("kbd")).not.toBeInTheDocument();
+  });
+});

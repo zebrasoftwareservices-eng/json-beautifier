@@ -1,10 +1,16 @@
-import { CodeEditor, type CodeEditorError } from "./CodeEditor";
+import {
+  CodeEditor,
+  type CodeEditorCursor,
+  type CodeEditorError,
+  type CodeEditorJumpTarget,
+} from "./CodeEditor";
 import "./EditorPanel.css";
 
 interface EditorPanelProps {
   value: string;
   onChange: (value: string) => void;
   onPaste?: (value: string) => void;
+  onCursorChange?: (cursor: CodeEditorCursor) => void;
   error?: CodeEditorError | null;
   placeholder?: string;
   lineCount: number;
@@ -15,12 +21,14 @@ interface EditorPanelProps {
   onDrop: (e: React.DragEvent) => void;
   uploadProgress: number | null;
   emptyState?: React.ReactNode;
+  jumpTarget?: CodeEditorJumpTarget | null;
 }
 
 export function EditorPanel({
   value,
   onChange,
   onPaste,
+  onCursorChange,
   error,
   placeholder,
   lineCount,
@@ -31,6 +39,7 @@ export function EditorPanel({
   onDrop,
   uploadProgress,
   emptyState,
+  jumpTarget,
 }: EditorPanelProps) {
   const statsLabel = error
     ? "1 error"
@@ -55,10 +64,12 @@ export function EditorPanel({
           value={value}
           onChange={onChange}
           onPaste={onPaste}
+          onCursorChange={onCursorChange}
           error={error}
           placeholder={placeholder}
+          jumpTarget={jumpTarget}
         />
-        {!value && emptyState}
+        {!value && !isDragging && uploadProgress === null && emptyState}
         {isDragging && (
           <div className="drop-overlay" aria-hidden="true">
             <span>Drop JSON file to load</span>

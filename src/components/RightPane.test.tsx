@@ -48,20 +48,20 @@ describe("RightPane — ErrorPanel", () => {
     const error: CodeEditorError = { message: "Unexpected token" };
     renderRightPane({ error });
     expect(screen.getByText("Unexpected token")).toBeInTheDocument();
-    expect(screen.getByText("Parse error")).toBeInTheDocument();
+    expect(screen.getByText("Invalid JSON")).toBeInTheDocument();
   });
 
-  it("shows 'Line N, col C' heading when error has line and column", () => {
+  it("shows 'Line N, Column C' location when error has line and column", () => {
     const error: CodeEditorError = {
       message: "Unexpected token",
       line: 3,
       column: 7,
     };
     renderRightPane({ error });
-    expect(screen.getByText("Line 3, col 7")).toBeInTheDocument();
+    expect(screen.getByText("Line 3, Column 7")).toBeInTheDocument();
   });
 
-  it("shows 'Line N' heading when error has line but no column", () => {
+  it("shows 'Line N' location when error has line but no column", () => {
     const error: CodeEditorError = { message: "Unexpected token", line: 5 };
     renderRightPane({ error });
     expect(screen.getByText("Line 5")).toBeInTheDocument();
@@ -95,6 +95,56 @@ describe("RightPane — ErrorPanel", () => {
   });
 });
 
+describe("RightPane — ErrorBanner action buttons", () => {
+  it("calls onAutoFix when 'Fix automatically' is clicked", async () => {
+    const onAutoFix = vi.fn();
+    const error: CodeEditorError = { message: "Unexpected token", line: 3 };
+    renderRightPane({ error, onAutoFix });
+    const user = userEvent.setup();
+    await user.click(
+      screen.getByRole("button", { name: /fix automatically/i }),
+    );
+    expect(onAutoFix).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables 'Fix automatically' when processing is true", () => {
+    const error: CodeEditorError = { message: "Unexpected token", line: 3 };
+    renderRightPane({ error, processing: true });
+    expect(
+      screen.getByRole("button", { name: /fix automatically/i }),
+    ).toBeDisabled();
+  });
+
+  it("does not disable 'Fix automatically' when processing is false or omitted", () => {
+    const error: CodeEditorError = { message: "Unexpected token", line: 3 };
+    renderRightPane({ error, processing: false });
+    expect(
+      screen.getByRole("button", { name: /fix automatically/i }),
+    ).not.toBeDisabled();
+  });
+
+  it("calls onJumpToError when 'Jump to error' is clicked and error.line is set", async () => {
+    const onJumpToError = vi.fn();
+    const error: CodeEditorError = { message: "Unexpected token", line: 3 };
+    renderRightPane({ error, onJumpToError });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /jump to error/i }));
+    expect(onJumpToError).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables 'Jump to error' and does not call onJumpToError when error.line is undefined", async () => {
+    const onJumpToError = vi.fn();
+    const error: CodeEditorError = { message: "Unexpected token" };
+    renderRightPane({ error, onJumpToError });
+    const jumpBtn = screen.getByRole("button", { name: /jump to error/i });
+    expect(jumpBtn).toBeDisabled();
+
+    const user = userEvent.setup();
+    await user.click(jumpBtn);
+    expect(onJumpToError).not.toHaveBeenCalled();
+  });
+});
+
 describe("RightPane — tab list", () => {
   it("renders an 'Error' tab button", () => {
     renderRightPane();
@@ -124,6 +174,19 @@ describe("RightPane — tab list", () => {
     for (const name of tabNames) {
       expect(screen.getByRole("tab", { name })).toBeInTheDocument();
     }
+  });
+
+  it("adds the 'tab-btn--error' class to the Error tab button when activeTab is 'error' and JSON is invalid", () => {
+    const error: CodeEditorError = { message: "Unexpected token" };
+    renderRightPane({ activeTab: "error", error });
+    const errorTab = screen.getByRole("tab", { name: "Error" });
+    expect(errorTab.className).toContain("tab-btn--error");
+  });
+
+  it("does not add the 'tab-btn--error' class to the Error tab button when a different tab is active", () => {
+    renderRightPane({ activeTab: "tree" });
+    const errorTab = screen.getByRole("tab", { name: "Error" });
+    expect(errorTab.className).not.toContain("tab-btn--error");
   });
 });
 
@@ -392,5 +455,71 @@ describe("RightPane — RepairPanel", () => {
     await user.click(screen.getByRole("button", { name: "Accept repair" }));
     expect(onAcceptRepair).toHaveBeenCalledWith(repairedText);
     expect(onAcceptRepair).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("RightPane — isEmpty", () => {
+  it("shows the output skeleton text when isEmpty is true", () => {
+    renderRightPane({ isEmpty: true, activeTab: "error" });
+    expect(screen.getByText("Formatted JSON appears here")).toBeInTheDocument();
+  });
+
+  it("does not render the normal tab panel content (tree-view) when isEmpty is true", () => {
+    renderRightPane({ isEmpty: true, activeTab: "tree", output: '{"a":1}' });
+    expect(screen.queryByTestId("tree-view")).not.toBeInTheDocument();
+  });
+
+  it("does not render the error panel content when isEmpty is true", () => {
+    renderRightPane({ isEmpty: true, activeTab: "error", error: null });
+    expect(
+      screen.queryByText("No errors — JSON is valid"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not show the skeleton text when isEmpty is false", () => {
+    renderRightPane({ isEmpty: false, activeTab: "error" });
+    expect(
+      screen.queryByText("Formatted JSON appears here"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("No errors — JSON is valid")).toBeInTheDocument();
+  });
+
+  it("does not show the skeleton text when isEmpty is omitted (default behavior)", () => {
+    renderRightPane({ activeTab: "error" });
+    expect(
+      screen.queryByText("Formatted JSON appears here"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("No errors — JSON is valid")).toBeInTheDocument();
+  });
+
+  it("still renders all 7 tab buttons in the tab bar when isEmpty is true", () => {
+    renderRightPane({ isEmpty: true, activeTab: "tree" });
+    const tabNames = [
+      "Tree",
+      "Code",
+      "Error",
+      "Repair",
+      "Table",
+      "Diff",
+      "Schema",
+    ];
+    for (const name of tabNames) {
+      expect(screen.getByRole("tab", { name })).toBeInTheDocument();
+    }
+  });
+
+  it("allows switching tabs via onTabChange even while isEmpty is true", async () => {
+    const onTabChange = vi.fn();
+    render(
+      <RightPane
+        output=""
+        activeTab="error"
+        onTabChange={onTabChange}
+        isEmpty
+      />,
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("tab", { name: "Code" }));
+    expect(onTabChange).toHaveBeenCalledWith("code");
   });
 });

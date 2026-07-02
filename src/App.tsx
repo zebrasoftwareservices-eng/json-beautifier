@@ -1,7 +1,12 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import "./App.css";
 import { useJsonWorker } from "./worker/useJsonWorker";
-import type { CodeEditorError } from "./components/CodeEditor";
+import { useTheme } from "./hooks/useTheme";
+import type {
+  CodeEditorError,
+  CodeEditorJumpTarget,
+} from "./components/CodeEditor";
 import { EditorPanel } from "./components/EditorPanel";
 import { AppShell } from "./components/AppShell";
 import { SAMPLE_JSON } from "./components/ActionBar";
@@ -13,6 +18,9 @@ import {
   type PaletteCommand,
 } from "./components/CommandPalette";
 import { IdentityBar } from "./components/IdentityBar";
+import { StatusBar } from "./components/StatusBar";
+import { Toast } from "./components/Toast";
+import type { CodeEditorCursor } from "./components/CodeEditor";
 import {
   RightPane,
   type TabId,
@@ -59,13 +67,11 @@ export default function App({ initialTab = "tree" }: AppProps) {
   const [output, setOutput] = useState("");
   const [error, setError] = useState<CodeEditorError | null>(null);
   const [indent, setIndent] = useState<number | "\t">(2);
-  const [parseTimeMs, setParseTimeMs] = useState<number | null>(null);
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
   const [copyLabel, setCopyLabel] = useState("Copy");
   const [autoFormat, setAutoFormat] = useState(true);
   const [fileName, setFileName] = useState<string | null>(null);
-  const [nodeCount, setNodeCount] = useState<number | null>(null);
   const [validationStatus, setValidationStatus] = useState<
     "idle" | "valid" | "invalid"
   >("idle");
@@ -78,14 +84,37 @@ export default function App({ initialTab = "tree" }: AppProps) {
   const [hasLargeIntegers, setHasLargeIntegers] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [paletteKey, setPaletteKey] = useState(0);
+  const [cursor, setCursor] = useState<CodeEditorCursor>({
+    line: 1,
+    column: 1,
+  });
+  const [jumpTarget, setJumpTarget] = useState<CodeEditorJumpTarget | null>(
+    null,
+  );
+  const [toast, setToast] = useState<{ id: number; message: string } | null>(
+    null,
+  );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const latestLoadIdRef = useRef(0);
   const latestValidateIdRef = useRef(0);
+  const jumpNonceRef = useRef(0);
+  const prevHasErrorRef = useRef(false);
+  const toastIdRef = useRef(0);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { process } = useJsonWorker();
+  const navigate = useNavigate();
+  const [, toggleTheme] = useTheme();
   const autoFormatTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const validateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const formatInFlightRef = useRef(false);
+
+  const showToast = useCallback((message: string) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastIdRef.current += 1;
+    setToast({ id: toastIdRef.current, message });
+    toastTimerRef.current = setTimeout(() => setToast(null), 2500);
+  }, []);
 
   // Accepts optional content to format (avoids stale closure on state)
   // Accepts optional content to format (avoids stale closure on state).
@@ -101,7 +130,6 @@ export default function App({ initialTab = "tree" }: AppProps) {
         const result = await process("beautify", toFormat, indent);
         if (result.ok) {
           setOutput(result.result);
-          setParseTimeMs(result.parseTimeMs);
           setHasLargeIntegers(result.hasLargeIntegers ?? false);
           setError(null);
           setActiveTab("code");
@@ -114,7 +142,6 @@ export default function App({ initialTab = "tree" }: AppProps) {
             column: result.column,
           });
           setOutput("");
-          setParseTimeMs(null);
           setHasLargeIntegers(false);
           setValidationStatus("invalid");
           return false;
@@ -122,7 +149,6 @@ export default function App({ initialTab = "tree" }: AppProps) {
       } catch {
         setError({ message: "Formatting failed — please try again." });
         setOutput("");
-        setParseTimeMs(null);
         setHasLargeIntegers(false);
         setValidationStatus("invalid");
         return false;
@@ -166,7 +192,6 @@ export default function App({ initialTab = "tree" }: AppProps) {
       if (loadId !== latestLoadIdRef.current) return;
       setInput(text);
       setOutput("");
-      setParseTimeMs(null);
       setFileName(file.name);
       track.fileUploaded();
     } catch {
@@ -223,7 +248,6 @@ export default function App({ initialTab = "tree" }: AppProps) {
     }
     setInput(result.text);
     setOutput("");
-    setParseTimeMs(null);
     setFileName(url);
     setUrlDialogOpen(false);
     track.urlLoaded();
@@ -237,7 +261,6 @@ export default function App({ initialTab = "tree" }: AppProps) {
       const result = await process("minify", input);
       if (result.ok) {
         setOutput(result.result);
-        setParseTimeMs(result.parseTimeMs);
         setHasLargeIntegers(result.hasLargeIntegers ?? false);
         setError(null);
         setActiveTab("code");
@@ -248,13 +271,11 @@ export default function App({ initialTab = "tree" }: AppProps) {
           column: result.column,
         });
         setOutput("");
-        setParseTimeMs(null);
         setValidationStatus("invalid");
       }
     } catch {
       setError({ message: "Minify failed — please try again." });
       setOutput("");
-      setParseTimeMs(null);
       setValidationStatus("invalid");
     } finally {
       setProcessing(false);
@@ -298,16 +319,75 @@ export default function App({ initialTab = "tree" }: AppProps) {
     setActiveTab("tree");
   }
 
+  // ErrorBanner "Fix automatically" (⌘R): repair, apply directly, and
+  // re-validate — distinct from the toolbar's Repair preview-and-accept flow.
+  async function handleAutoFix() {
+    if (!input.trim() || validationStatus !== "invalid") return;
+    setProcessing(true);
+    const autoFixId = ++latestValidateIdRef.current;
+    try {
+      const result = await process("repair", input);
+      if (autoFixId !== latestValidateIdRef.current) return; // input changed while repairing
+      if (!result.ok) {
+        setError({ message: result.message });
+        setValidationStatus("invalid");
+        return;
+      }
+      const fixedText = result.result;
+      track.jsonRepaired();
+      setInput(fixedText);
+      setPartialJson(null);
+
+      const validation = await process("validate", fixedText);
+      if (autoFixId !== latestValidateIdRef.current) return; // input changed while validating
+      if (validation.ok) {
+        setError(null);
+        setHasLargeIntegers(validation.hasLargeIntegers ?? false);
+        setValidationStatus("valid");
+        setActiveTab("tree");
+      } else {
+        const suggestion = getSuggestion(
+          fixedText,
+          validation.message,
+          validation.line,
+        );
+        setError({
+          message: validation.message,
+          line: validation.line,
+          column: validation.column,
+          suggestion: suggestion ?? undefined,
+        });
+        setHasLargeIntegers(false);
+        setValidationStatus("invalid");
+        const repaired = repairJson(fixedText);
+        setPartialJson(repaired.ok ? repaired.result : null);
+      }
+    } catch {
+      setError({ message: "Repair failed — please try again." });
+      setValidationStatus("invalid");
+    } finally {
+      setProcessing(false);
+    }
+  }
+
+  function handleJumpToError() {
+    if (error?.line == null) return;
+    jumpNonceRef.current += 1;
+    setJumpTarget({
+      line: error.line,
+      column: error.column,
+      nonce: jumpNonceRef.current,
+    });
+  }
+
   function handleClear() {
     if (autoFormatTimerRef.current) clearTimeout(autoFormatTimerRef.current);
     if (validateTimerRef.current) clearTimeout(validateTimerRef.current);
     setInput("");
     setOutput("");
     setError(null);
-    setParseTimeMs(null);
     setCopyLabel("Copy");
     setFileName(null);
-    setNodeCount(null);
     setValidationStatus("idle");
     setRepairResult(null);
     setHasLargeIntegers(false);
@@ -319,6 +399,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
       await navigator.clipboard.writeText(output);
       setCopyLabel("Copied!");
       setTimeout(() => setCopyLabel("Copy"), 1500);
+      showToast("Copied to clipboard");
     } catch {
       setError({ message: "Copy failed — please copy the output manually." });
     }
@@ -329,14 +410,16 @@ export default function App({ initialTab = "tree" }: AppProps) {
     const blob = new Blob([output], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
     // Derive filename: strip old extension and use .json
-    a.download = fileName
+    const downloadName = fileName
       ? fileName.replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9._-]/g, "_") +
         ".json"
       : "output.json";
+    a.href = url;
+    a.download = downloadName;
     a.click();
     URL.revokeObjectURL(url);
+    showToast(`Downloaded ${downloadName}`);
   }
 
   async function handlePaste() {
@@ -364,9 +447,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
     setInput(SAMPLE_JSON);
     setOutput("");
     setError(null);
-    setParseTimeMs(null);
     setFileName(null);
-    setNodeCount(null);
     setValidationStatus("idle");
     setRepairResult(null);
     setHasLargeIntegers(false);
@@ -388,8 +469,6 @@ export default function App({ initialTab = "tree" }: AppProps) {
       const validateId = ++latestValidateIdRef.current;
       if (!toValidate.trim()) {
         setValidationStatus("idle");
-        setNodeCount(null);
-        setParseTimeMs(null);
         setHasLargeIntegers(false);
         setError(null);
         setPartialJson(null);
@@ -399,8 +478,6 @@ export default function App({ initialTab = "tree" }: AppProps) {
       if (validateId !== latestValidateIdRef.current) return; // discard stale
       if (result.ok) {
         setError(null);
-        setNodeCount(result.nodeCount ?? null);
-        setParseTimeMs(result.parseTimeMs);
         setHasLargeIntegers(result.hasLargeIntegers ?? false);
         setValidationStatus("valid");
         setPartialJson(null);
@@ -417,8 +494,6 @@ export default function App({ initialTab = "tree" }: AppProps) {
           column: result.column,
           suggestion: suggestion ?? undefined,
         });
-        setNodeCount(null);
-        setParseTimeMs(null);
         setHasLargeIntegers(false);
         setValidationStatus("invalid");
         if (switchTab) setActiveTab("error");
@@ -441,6 +516,17 @@ export default function App({ initialTab = "tree" }: AppProps) {
     };
   }, [input, handleValidate]);
 
+  // Error tab auto-activates the moment JSON becomes invalid (not on every
+  // subsequent re-validate while it stays invalid, so it doesn't fight the
+  // user's own tab navigation).
+  useEffect(() => {
+    const hasError = validationStatus === "invalid" && error != null;
+    if (hasError && !prevHasErrorRef.current) {
+      setActiveTab("error");
+    }
+    prevHasErrorRef.current = hasError;
+  }, [validationStatus, error]);
+
   // Called by CodeEditor when user pastes directly into the editor
   const handleEditorPaste = useCallback(
     (pastedValue: string) => {
@@ -457,6 +543,9 @@ export default function App({ initialTab = "tree" }: AppProps) {
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (!(e.metaKey || e.ctrlKey)) return;
+      // Don't let editor shortcuts (especially destructive ones like Clear
+      // and Fix automatically) fire in the background while a modal is open.
+      if (paletteOpen || urlDialogOpen) return;
       const allowedWhileProcessing =
         !e.shiftKey && (e.key === "k" || e.key === "/" || e.key === "f");
       if (processing && !allowedWhileProcessing) return;
@@ -515,6 +604,18 @@ export default function App({ initialTab = "tree" }: AppProps) {
               50,
             );
             break;
+          case "l":
+            e.preventDefault();
+            setUrlDialogOpen(true);
+            break;
+          case "r":
+            e.preventDefault();
+            handleAutoFix();
+            break;
+          case "y":
+            e.preventDefault();
+            navigate("/json-to-yaml");
+            break;
         }
       }
     }
@@ -525,10 +626,14 @@ export default function App({ initialTab = "tree" }: AppProps) {
     handleMinify,
     handleValidate,
     handleRepair,
+    handleAutoFix,
     handleCopy,
     handleDownload,
     handleClear,
+    navigate,
     processing,
+    paletteOpen,
+    urlDialogOpen,
   ]);
 
   // Clear stale repair result whenever the editor content changes
@@ -542,6 +647,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
     return () => {
       if (autoFormatTimerRef.current) clearTimeout(autoFormatTimerRef.current);
       if (validateTimerRef.current) clearTimeout(validateTimerRef.current);
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     };
   }, []);
 
@@ -552,6 +658,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
         : `Invalid JSON: ${error.message}`
       : null;
 
+  const lineCount = input ? input.split("\n").length : 0;
   const inputSizeBytes = new TextEncoder().encode(input).length;
   const sizeLabel =
     inputSizeBytes > 0
@@ -563,6 +670,8 @@ export default function App({ initialTab = "tree" }: AppProps) {
       : null;
 
   const memoryWarning = inputSizeBytes > 10_000_000;
+
+  const indentLabel = indent === "\t" ? "Tab" : `${indent} spaces`;
 
   const bigintNote = hasLargeIntegers
     ? "⚠ Large integers — precision preserved"
@@ -599,6 +708,12 @@ export default function App({ initialTab = "tree" }: AppProps) {
         disabled: processing || validationStatus !== "invalid",
       },
       {
+        id: "convert",
+        label: "Convert JSON",
+        shortcut: `${m}Y`,
+        action: () => navigate("/json-to-yaml"),
+      },
+      {
         id: "copy",
         label: "Copy Output",
         shortcut: `${m}${s}C`,
@@ -615,7 +730,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
       {
         id: "load-url",
         label: "Load from URL",
-        shortcut: `${m}${s}U`,
+        shortcut: `${m}L`,
         action: () => setUrlDialogOpen(true),
       },
       {
@@ -638,6 +753,12 @@ export default function App({ initialTab = "tree" }: AppProps) {
           window.dispatchEvent(new CustomEvent("tree:collapse-all")),
       },
       {
+        id: "toggle-theme",
+        label: "Toggle Theme",
+        shortcut: "",
+        action: toggleTheme,
+      },
+      {
         id: "clear",
         label: "Clear Editor",
         shortcut: isMac ? `${m}${s}⌫` : `${m}${s}Del`,
@@ -653,36 +774,12 @@ export default function App({ initialTab = "tree" }: AppProps) {
       handleCopy,
       handleDownload,
       handleClear,
+      navigate,
+      toggleTheme,
       validationStatus,
       processing,
     ],
   );
-
-  const statusText = processing
-    ? `Processing… · Web Worker`
-    : validationStatus === "valid" && nodeCount !== null && parseTimeMs !== null
-      ? [
-          "✓ Valid",
-          bigintNote,
-          sizeLabel,
-          `${nodeCount} node${nodeCount === 1 ? "" : "s"}`,
-          `${parseTimeMs} ms`,
-          "Web Worker",
-        ]
-          .filter(Boolean)
-          .join(" · ")
-      : validationStatus === "invalid" && error
-        ? error.line != null
-          ? `✗ Invalid JSON — line ${error.line}${error.column != null ? `, col ${error.column}` : ""}: ${error.message}`
-          : `✗ Invalid JSON: ${error.message}`
-        : [
-            sizeLabel
-              ? `Ready · ${sizeLabel} — ${m}K for commands`
-              : `Ready — ${m}K for commands`,
-            bigintNote,
-          ]
-            .filter(Boolean)
-            .join(" · ");
 
   return (
     <>
@@ -728,6 +825,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
                 ⚠ Large document ({sizeLabel}) — performance may be affected
               </div>
             )}
+            {bigintNote && <div className="memory-warning">{bigintNote}</div>}
             {errorLabel && <div className="error-banner">{errorLabel}</div>}
           </>
         }
@@ -736,15 +834,17 @@ export default function App({ initialTab = "tree" }: AppProps) {
             value={input}
             onChange={setInput}
             onPaste={handleEditorPaste}
+            onCursorChange={setCursor}
             error={error}
             placeholder={'Paste or type JSON here…\n\n{"key": "value"}'}
-            lineCount={input ? input.split("\n").length : 0}
+            lineCount={lineCount}
             sizeLabel={sizeLabel}
             isDragging={isDragging}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             uploadProgress={uploadProgress}
+            jumpTarget={jumpTarget}
             emptyState={
               <EditorEmptyState
                 onPaste={handlePaste}
@@ -768,15 +868,26 @@ export default function App({ initialTab = "tree" }: AppProps) {
             isPartialTree={
               validationStatus === "invalid" && partialJson !== null
             }
+            isEmpty={!input.trim()}
+            onAutoFix={handleAutoFix}
+            onJumpToError={handleJumpToError}
+            processing={processing}
           />
         }
         statusBar={
-          <div className="status-bar">
-            <span>{statusText}</span>
-            <span className="status-bar__privacy">
-              Processed locally · Load URL requests the remote host directly
-            </span>
-          </div>
+          <StatusBar
+            state={validationStatus}
+            errorCount={validationStatus === "invalid" ? 1 : 0}
+            lineCount={lineCount}
+            sizeLabel={sizeLabel}
+            cursorLine={cursor.line}
+            cursorColumn={cursor.column}
+            indentLabel={indentLabel}
+            onOpenPalette={() => {
+              setPaletteOpen(true);
+              setPaletteKey((k) => k + 1);
+            }}
+          />
         }
         modals={
           <>
@@ -793,6 +904,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
               onClose={() => setPaletteOpen(false)}
               commands={paletteCmds}
             />
+            <Toast key={toast?.id} message={toast?.message ?? null} />
           </>
         }
       />
