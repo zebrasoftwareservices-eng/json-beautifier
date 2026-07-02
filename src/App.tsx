@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import "./App.css";
 import { useJsonWorker } from "./worker/useJsonWorker";
+import type { IndentSetting } from "./worker/jsonLogic";
 import { CodeEditor, type CodeEditorError } from "./components/CodeEditor";
 import { AppShell } from "./components/AppShell";
 import { SAMPLE_JSON } from "./components/ActionBar";
@@ -57,7 +58,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
   const [error, setError] = useState<CodeEditorError | null>(null);
-  const [indent, setIndent] = useState<number | "\t">(2);
+  const [indent, setIndent] = useState<IndentSetting>(2);
   const [parseTimeMs, setParseTimeMs] = useState<number | null>(null);
   const [processing, setProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);

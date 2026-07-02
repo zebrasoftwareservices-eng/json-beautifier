@@ -1,5 +1,6 @@
 import { useRef, useCallback, useEffect } from "react";
 import type { WorkerRequest, WorkerResponse } from "./types";
+import type { IndentSetting } from "./jsonLogic";
 
 export type WorkerResult =
   | {
@@ -62,7 +63,7 @@ export function useJsonWorker() {
     (
       type: "beautify" | "minify" | "validate" | "repair",
       input: string,
-      indent: number | "\t" = 2,
+      indent: IndentSetting = 2,
     ): Promise<WorkerResult> =>
       new Promise((resolve) => {
         const id = nextId++;

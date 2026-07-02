@@ -9,6 +9,7 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import { DwellButton } from "./DwellButton";
+import type { IndentSetting } from "../worker/jsonLogic";
 import "./ActionToolbar.css";
 
 const isMac =
@@ -22,7 +23,7 @@ const SC = {
   repair: `${m}${s}R`,
 };
 
-const INDENT_OPTIONS: { label: string; value: number | "\t" }[] = [
+const INDENT_OPTIONS: { label: string; value: IndentSetting }[] = [
   { label: "2", value: 2 },
   { label: "4", value: 4 },
   { label: "Tab", value: "\t" },
@@ -31,8 +32,8 @@ const INDENT_OPTIONS: { label: string; value: number | "\t" }[] = [
 type PrimaryAction = "format" | "minify" | "validate" | "repair";
 
 interface ActionToolbarProps {
-  indent: number | "\t";
-  onIndentChange: (n: number | "\t") => void;
+  indent: IndentSetting;
+  onIndentChange: (n: IndentSetting) => void;
   onFormat: () => void;
   onMinify: () => void;
   onValidate: () => void;
