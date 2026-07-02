@@ -79,6 +79,36 @@ describe("CodeEditor — error prop transitions", () => {
   });
 });
 
+describe("CodeEditor — wrap prop", () => {
+  it("mounts without throwing when wrap is true and still renders the value", () => {
+    const { container } = render(<CodeEditor value='{"a":1}' wrap />);
+    expect(container.querySelector(".code-editor")).toBeInTheDocument();
+    expect(container.querySelector(".cm-content")?.textContent).toContain(
+      '{"a":1}',
+    );
+  });
+
+  it("mounts without throwing when wrap is false and still renders the value", () => {
+    const { container } = render(<CodeEditor value='{"a":1}' wrap={false} />);
+    expect(container.querySelector(".code-editor")).toBeInTheDocument();
+    expect(container.querySelector(".cm-content")?.textContent).toContain(
+      '{"a":1}',
+    );
+  });
+
+  it("does not throw when wrap toggles from false to true after mount", () => {
+    const { rerender, container } = render(
+      <CodeEditor value='{"a":1}' wrap={false} />,
+    );
+    expect(() =>
+      rerender(<CodeEditor value='{"a":1}' wrap={true} />),
+    ).not.toThrow();
+    expect(container.querySelector(".cm-content")?.textContent).toContain(
+      '{"a":1}',
+    );
+  });
+});
+
 describe("CodeEditor — value sync and unmount", () => {
   it("does not throw when value updates externally", () => {
     const { rerender } = render(<CodeEditor value="{}" />);

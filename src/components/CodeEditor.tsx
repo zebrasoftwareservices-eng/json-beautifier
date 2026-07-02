@@ -58,6 +58,7 @@ interface CodeEditorProps {
   error?: CodeEditorError | null;
   readOnly?: boolean;
   placeholder?: string;
+  wrap?: boolean;
 }
 
 export function CodeEditor({
@@ -67,6 +68,7 @@ export function CodeEditor({
   error,
   readOnly = false,
   placeholder,
+  wrap = false,
 }: CodeEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -147,6 +149,10 @@ export function CodeEditor({
       extensions.push(EditorState.readOnly.of(true));
     }
 
+    if (wrap) {
+      extensions.push(EditorView.lineWrapping);
+    }
+
     if (placeholder) {
       extensions.push(cmPlaceholder(placeholder));
     }
@@ -162,7 +168,7 @@ export function CodeEditor({
       viewRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [readOnly]);
+  }, [readOnly, wrap]);
 
   // Sync external value into editor without triggering onChange
   useEffect(() => {

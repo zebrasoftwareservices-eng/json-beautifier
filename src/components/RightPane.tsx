@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { CodeEditor, type CodeEditorError } from "./CodeEditor";
 import { TreeView } from "./TreeView";
 import { TableView } from "./TableView";
@@ -165,6 +166,9 @@ export function RightPane({
   partialJson,
   isPartialTree,
 }: RightPaneProps) {
+  const [activeTreePath, setActiveTreePath] = useState("$");
+  const [wrapCode, setWrapCode] = useState(false);
+
   const onKeyDown = (e: React.KeyboardEvent) => {
     const currentIndex = TABS.findIndex((t) => t.id === activeTab);
     if (e.key === "ArrowLeft" && currentIndex > 0) {
@@ -184,25 +188,64 @@ export function RightPane({
 
   return (
     <div className="right-pane">
-      <div className="tab-bar" role="tablist" onKeyDown={onKeyDown}>
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            id={`tab-${tab.id}`}
-            role="tab"
-            aria-selected={activeTab === tab.id}
-            aria-controls={`panel-${tab.id}`}
-            className={`tab-btn${activeTab === tab.id ? " active" : ""}`}
-            onClick={() => onTabChange(tab.id)}
-          >
-            {tab.label}
-            {tab.id === "tree" && isPartialTree && (
-              <span className="tab-btn__badge" aria-label="partial tree">
-                ⚠
-              </span>
-            )}
-          </button>
-        ))}
+      <div className="tab-strip">
+        <div className="tab-bar" role="tablist" onKeyDown={onKeyDown}>
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              id={`tab-${tab.id}`}
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              aria-controls={`panel-${tab.id}`}
+              className={`tab-btn${tab.id === "error" && error ? " tab-btn--error" : ""}${activeTab === tab.id ? " active" : ""}`}
+              onClick={() => onTabChange(tab.id)}
+            >
+              {tab.label}
+              {tab.id === "tree" && isPartialTree && (
+                <span className="tab-btn__badge" aria-label="partial tree">
+                  ⚠
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        <select
+          className="tab-select"
+          aria-label="Select output view"
+          value={activeTab}
+          onChange={(e) => onTabChange(e.target.value as TabId)}
+        >
+          {TABS.map((tab) => (
+            <option key={tab.id} value={tab.id}>
+              {tab.label}
+            </option>
+          ))}
+        </select>
+
+        <div className="tab-strip__context">
+          {activeTab === "tree" && (
+            <button
+              className="tab-strip__ctrl-btn"
+              onClick={() =>
+                navigator.clipboard.writeText(activeTreePath).catch(() => {})
+              }
+              title="Copy the currently hovered JSONPath"
+            >
+              Copy path
+            </button>
+          )}
+          {activeTab === "code" && (
+            <button
+              className={`tab-strip__ctrl-btn${wrapCode ? " active" : ""}`}
+              aria-pressed={wrapCode}
+              onClick={() => setWrapCode((w) => !w)}
+              title="Toggle line wrap"
+            >
+              Wrap
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="tab-content">
@@ -219,12 +262,14 @@ export function RightPane({
               <TreeView
                 json={isPartialTree && partialJson ? partialJson : output}
                 isPartial={isPartialTree}
+                onActivePathChange={setActiveTreePath}
               />
             ) : tab.id === "code" ? (
               <CodeEditor
                 value={output}
                 readOnly
                 placeholder="Output appears here…"
+                wrap={wrapCode}
               />
             ) : tab.id === "error" ? (
               <ErrorPanel error={error} input={input} />

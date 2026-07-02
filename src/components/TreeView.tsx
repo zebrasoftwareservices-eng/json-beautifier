@@ -151,9 +151,14 @@ const TreeRow = memo(function TreeRow({
 interface TreeViewProps {
   json: string;
   isPartial?: boolean;
+  onActivePathChange?: (path: string) => void;
 }
 
-export function TreeView({ json, isPartial }: TreeViewProps) {
+export function TreeView({
+  json,
+  isPartial,
+  onActivePathChange,
+}: TreeViewProps) {
   const { parsed, parseError } = useMemo(() => {
     if (!json.trim()) return { parsed: null, parseError: false };
     try {
@@ -262,9 +267,13 @@ export function TreeView({ json, isPartial }: TreeViewProps) {
     setExpanded(new Set(["$"]));
   }, []);
 
-  const onHover = useCallback((path: string) => {
-    setBreadcrumb(path);
-  }, []);
+  const onHover = useCallback(
+    (path: string) => {
+      setBreadcrumb(path);
+      onActivePathChange?.(path);
+    },
+    [onActivePathChange],
+  );
 
   if (!json.trim()) {
     return (
