@@ -803,6 +803,40 @@ describe("Repair button click behavior", () => {
 // JSO-11: Load URL feature
 // ---------------------------------------------------------------------------
 
+describe("Keyboard shortcut Cmd/Ctrl+L → Load from URL", () => {
+  it("opens the Load URL dialog when Ctrl+L is pressed", async () => {
+    render(<App />, { wrapper });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.keyDown(window, { ctrlKey: true, key: "l" });
+    });
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("opens the Load URL dialog when Meta+L (Cmd on Mac) is pressed", async () => {
+    render(<App />, { wrapper });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.keyDown(window, { metaKey: true, key: "l" });
+    });
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("does NOT open the Load URL dialog when 'l' is pressed without Ctrl/Meta", async () => {
+    render(<App />, { wrapper });
+
+    await act(async () => {
+      fireEvent.keyDown(window, { key: "l" });
+    });
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+});
+
 describe("Load URL feature", () => {
   afterEach(() => {
     vi.unstubAllGlobals();

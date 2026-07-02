@@ -1,0 +1,72 @@
+.output-skeleton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 20px;
+  padding: 24px;
+}
+
+.output-skeleton__bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.output-skeleton__bar {
+  height: 10px;
+  border-radius: 4px;
+  background: var(--text-secondary);
+  opacity: 0.15;
+  animation: output-skeleton-pulse 1.6s ease-in-out infinite;
+}
+
+.output-skeleton__bar--1 {
+  width: 100px;
+  animation-delay: 0ms;
+}
+.output-skeleton__bar--2 {
+  width: 140px;
+  margin-left: 16px;
+  animation-delay: 120ms;
+}
+.output-skeleton__bar--3 {
+  width: 88px;
+  margin-left: 32px;
+  animation-delay: 240ms;
+}
+.output-skeleton__bar--4 {
+  width: 120px;
+  margin-left: 16px;
+  animation-delay: 360ms;
+}
+.output-skeleton__bar--5 {
+  width: 72px;
+  animation-delay: 480ms;
+}
+
+.output-skeleton__text {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-family: var(--sans);
+  text-align: center;
+  margin: 0;
+}
+
+@keyframes output-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .output-skeleton__bar {
+    animation: none;
+    opacity: 0.15;
+  }
+}

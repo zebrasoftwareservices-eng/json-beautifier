@@ -1,6 +1,7 @@
 import { CodeEditor, type CodeEditorError } from "./CodeEditor";
 import { TreeView } from "./TreeView";
 import { TableView } from "./TableView";
+import { OutputSkeleton } from "./OutputSkeleton";
 
 export type TabId =
   | "tree"
@@ -35,6 +36,8 @@ interface RightPaneProps {
   onAcceptRepair?: (text: string) => void;
   partialJson?: string | null;
   isPartialTree?: boolean;
+  /** True when the input editor is empty — shows the onboarding skeleton instead of tab content. */
+  isEmpty?: boolean;
 }
 
 function Placeholder({ label }: { label: string }) {
@@ -164,6 +167,7 @@ export function RightPane({
   onAcceptRepair,
   partialJson,
   isPartialTree,
+  isEmpty,
 }: RightPaneProps) {
   const onKeyDown = (e: React.KeyboardEvent) => {
     const currentIndex = TABS.findIndex((t) => t.id === activeTab);
@@ -205,42 +209,48 @@ export function RightPane({
         ))}
       </div>
 
-      <div className="tab-content">
-        {TABS.map((tab) => (
-          <div
-            key={tab.id}
-            id={`panel-${tab.id}`}
-            role="tabpanel"
-            aria-labelledby={`tab-${tab.id}`}
-            hidden={activeTab !== tab.id}
-            style={{ height: "100%" }}
-          >
-            {tab.id === "tree" ? (
-              <TreeView
-                json={isPartialTree && partialJson ? partialJson : output}
-                isPartial={isPartialTree}
-              />
-            ) : tab.id === "code" ? (
-              <CodeEditor
-                value={output}
-                readOnly
-                placeholder="Output appears here…"
-              />
-            ) : tab.id === "error" ? (
-              <ErrorPanel error={error} input={input} />
-            ) : tab.id === "repair" ? (
-              <RepairPanel
-                repairResult={repairResult}
-                onAcceptRepair={onAcceptRepair}
-              />
-            ) : tab.id === "table" ? (
-              <TableView json={output} />
-            ) : (
-              <Placeholder label={tab.label} />
-            )}
-          </div>
-        ))}
-      </div>
+      {isEmpty ? (
+        <div className="tab-content">
+          <OutputSkeleton />
+        </div>
+      ) : (
+        <div className="tab-content">
+          {TABS.map((tab) => (
+            <div
+              key={tab.id}
+              id={`panel-${tab.id}`}
+              role="tabpanel"
+              aria-labelledby={`tab-${tab.id}`}
+              hidden={activeTab !== tab.id}
+              style={{ height: "100%" }}
+            >
+              {tab.id === "tree" ? (
+                <TreeView
+                  json={isPartialTree && partialJson ? partialJson : output}
+                  isPartial={isPartialTree}
+                />
+              ) : tab.id === "code" ? (
+                <CodeEditor
+                  value={output}
+                  readOnly
+                  placeholder="Output appears here…"
+                />
+              ) : tab.id === "error" ? (
+                <ErrorPanel error={error} input={input} />
+              ) : tab.id === "repair" ? (
+                <RepairPanel
+                  repairResult={repairResult}
+                  onAcceptRepair={onAcceptRepair}
+                />
+              ) : tab.id === "table" ? (
+                <TableView json={output} />
+              ) : (
+                <Placeholder label={tab.label} />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

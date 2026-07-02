@@ -218,3 +218,69 @@ describe("RightPane — RepairPanel", () => {
     expect(onAcceptRepair).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("RightPane — isEmpty", () => {
+  it("shows the output skeleton text when isEmpty is true", () => {
+    renderRightPane({ isEmpty: true, activeTab: "error" });
+    expect(screen.getByText("Formatted JSON appears here")).toBeInTheDocument();
+  });
+
+  it("does not render the normal tab panel content (tree-view) when isEmpty is true", () => {
+    renderRightPane({ isEmpty: true, activeTab: "tree", output: '{"a":1}' });
+    expect(screen.queryByTestId("tree-view")).not.toBeInTheDocument();
+  });
+
+  it("does not render the error panel content when isEmpty is true", () => {
+    renderRightPane({ isEmpty: true, activeTab: "error", error: null });
+    expect(
+      screen.queryByText("No errors — JSON is valid"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not show the skeleton text when isEmpty is false", () => {
+    renderRightPane({ isEmpty: false, activeTab: "error" });
+    expect(
+      screen.queryByText("Formatted JSON appears here"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("No errors — JSON is valid")).toBeInTheDocument();
+  });
+
+  it("does not show the skeleton text when isEmpty is omitted (default behavior)", () => {
+    renderRightPane({ activeTab: "error" });
+    expect(
+      screen.queryByText("Formatted JSON appears here"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("No errors — JSON is valid")).toBeInTheDocument();
+  });
+
+  it("still renders all 7 tab buttons in the tab bar when isEmpty is true", () => {
+    renderRightPane({ isEmpty: true, activeTab: "tree" });
+    const tabNames = [
+      "Tree",
+      "Code",
+      "Error",
+      "Repair",
+      "Table",
+      "Diff",
+      "Schema",
+    ];
+    for (const name of tabNames) {
+      expect(screen.getByRole("tab", { name })).toBeInTheDocument();
+    }
+  });
+
+  it("allows switching tabs via onTabChange even while isEmpty is true", async () => {
+    const onTabChange = vi.fn();
+    render(
+      <RightPane
+        output=""
+        activeTab="error"
+        onTabChange={onTabChange}
+        isEmpty
+      />,
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("tab", { name: "Code" }));
+    expect(onTabChange).toHaveBeenCalledWith("code");
+  });
+});
