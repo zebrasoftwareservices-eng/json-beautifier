@@ -5,6 +5,7 @@ interface SplitPaneProps {
   right: React.ReactNode;
   storageKey?: string;
   defaultPct?: number;
+  mobilePaneActive?: "left" | "right";
 }
 
 const STORAGE_KEY = "json-beautifier:panel-ratio";
@@ -42,6 +43,7 @@ export function SplitPane({
   right,
   storageKey = STORAGE_KEY,
   defaultPct = DEFAULT_PCT,
+  mobilePaneActive,
 }: SplitPaneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -141,8 +143,12 @@ export function SplitPane({
     }
   }, [isCollapsed, leftPct, minPct, storageKey, defaultPct]);
 
+  const mobileCls = mobilePaneActive
+    ? ` split-pane--mobile-${mobilePaneActive}`
+    : "";
+
   return (
-    <div ref={containerRef} className="split-pane">
+    <div ref={containerRef} className={`split-pane${mobileCls}`}>
       <div className="split-left" style={{ width: `${leftPct}%` }}>
         {left}
       </div>

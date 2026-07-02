@@ -194,9 +194,42 @@
   justify-content: center;
 }
 
-/* ── Responsive: wrap to 2 rows on tablet ── */
+/* ── Row break: hidden by default, activates on tablet to force 2 rows ── */
+.action-toolbar__row-break {
+  display: none;
+}
+
+/* ── Responsive: clean 2-row layout on tablet ── */
 @media (max-width: 1023px) {
   .action-toolbar {
     row-gap: 8px;
+  }
+
+  /* Make the row-break a full-width zero-height flex item so actions fill row 1
+     and indent/auto-format/utility wrap to row 2. */
+  .action-toolbar__row-break {
+    display: block;
+    flex: 0 0 100%;
+    height: 0;
+  }
+}
+
+/* ── Responsive: touch targets ≥44px on mobile ── */
+@media (max-width: 719px) {
+  .segmented__item {
+    min-height: 44px;
+  }
+
+  .ghost-btn {
+    height: 44px;
+    min-height: 44px;
+  }
+
+  .ghost-btn--icon {
+    width: 44px;
+  }
+
+  .auto-format {
+    min-height: 44px;
   }
 }
