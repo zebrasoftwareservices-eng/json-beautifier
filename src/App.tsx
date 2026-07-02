@@ -538,6 +538,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
         : `Invalid JSON: ${error.message}`
       : null;
 
+  const lineCount = input ? input.split("\n").length : 0;
   const inputSizeBytes = new TextEncoder().encode(input).length;
   const sizeLabel =
     inputSizeBytes > 0
@@ -702,7 +703,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
             onCursorChange={setCursor}
             error={error}
             placeholder={'Paste or type JSON here…\n\n{"key": "value"}'}
-            lineCount={input ? input.split("\n").length : 0}
+            lineCount={lineCount}
             sizeLabel={sizeLabel}
             isDragging={isDragging}
             onDragOver={handleDragOver}
@@ -738,7 +739,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
           <StatusBar
             state={validationStatus}
             errorCount={validationStatus === "invalid" ? 1 : 0}
-            lineCount={input ? input.split("\n").length : 0}
+            lineCount={lineCount}
             sizeLabel={sizeLabel}
             cursorLine={cursor.line}
             cursorColumn={cursor.column}
