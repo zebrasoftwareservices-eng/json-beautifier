@@ -454,47 +454,69 @@ button.toolbar-btn--clear-armed:hover:not(:disabled) {
   height: 100%;
 }
 
-/* ── Right pane (panel surface) ── */
+/* ── Right pane (page surface — lighter than the inset input panel) ── */
 .right-pane {
   display: flex;
   flex-direction: column;
   height: 100%;
   border-left: 1px solid var(--border);
-  background: var(--surface-panel);
+  background: var(--surface-page);
 }
 
-/* ── Tab bar (elevated surface) ── */
-.tab-bar {
+/* ── Tab strip (46px, pill tabs + contextual control) ── */
+.tab-strip {
   display: flex;
-  border-bottom: 1px solid var(--border);
+  align-items: center;
+  height: 46px;
   flex-shrink: 0;
+  gap: 8px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--border-subtle);
   background: var(--surface-elevated);
 }
 
+.tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tab-bar::-webkit-scrollbar {
+  display: none;
+}
+
 .tab-btn {
-  padding: 8px 16px;
-  border-radius: 0;
+  flex-shrink: 0;
+  padding: 6px 11px;
+  border-radius: 9999px;
   border: none;
-  border-bottom: 2px solid transparent;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 500;
-  font-family: var(--sans);
+  font: 500 12.5px var(--sans);
   cursor: pointer;
+  white-space: nowrap;
   transition:
     color 0.15s,
-    border-color 0.15s;
+    background-color 0.15s;
 }
 
 .tab-btn:hover:not(:disabled) {
-  color: var(--text-primary);
-  opacity: 1;
+  background: var(--surface-hover);
 }
 
 .tab-btn.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
+  font-weight: 600;
+  color: var(--accent-text);
+  background: var(--accent-subtle);
+}
+
+.tab-btn--error.active {
+  color: var(--danger);
+  background: var(--danger-bg);
 }
 
 .tab-btn.active.tab-btn--error {
@@ -508,6 +530,57 @@ button.toolbar-btn--clear-armed:hover:not(:disabled) {
   font-size: 10px;
   color: var(--warning);
   vertical-align: middle;
+}
+
+/* Mobile dropdown replaces the pill row below 720px */
+.tab-select {
+  display: none;
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-panel);
+  color: var(--text-primary);
+  font: 500 12.5px var(--sans);
+}
+
+.tab-strip__context {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tab-strip__ctrl-btn {
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font: 500 12px var(--sans);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tab-strip__ctrl-btn:hover {
+  background: var(--surface-hover);
+}
+
+.tab-strip__ctrl-btn.active {
+  color: var(--accent-text);
+  background: var(--accent-subtle);
+  border-color: var(--accent-border);
+}
+
+@media (max-width: 719px) {
+  .tab-bar {
+    display: none;
+  }
+
+  .tab-select {
+    display: block;
+  }
 }
 
 .tab-content {
@@ -1099,34 +1172,34 @@ button.toolbar-btn--clear-armed:hover:not(:disabled) {
 }
 
 .tree-key {
-  color: var(--accent);
+  color: var(--syntax-key);
 }
 
 .tree-colon {
-  color: var(--text-secondary);
+  color: var(--syntax-punctuation);
   opacity: 0.5;
 }
 
 .tree-value--string {
-  color: var(--success);
+  color: var(--syntax-string);
 }
 
 .tree-value--number {
-  color: var(--accent);
+  color: var(--syntax-number);
 }
 
 .tree-value--boolean {
-  color: var(--accent);
+  color: var(--syntax-boolean);
 }
 
 .tree-value--null {
-  color: var(--text-muted);
+  color: var(--syntax-null);
 }
 
 .tree-value--object,
 .tree-value--array {
-  color: var(--text-secondary);
-  opacity: 0.7;
+  color: var(--syntax-bracket);
+  opacity: 0.85;
 }
 
 .tree-value--bigint {

@@ -307,6 +307,44 @@ describe("clipboard — copy path", () => {
   });
 });
 
+// ── 14b. onActivePathChange prop ─────────────────────────────────────────────
+
+describe("onActivePathChange prop", () => {
+  it("calls onActivePathChange with the hovered row's path", () => {
+    const onActivePathChange = vi.fn();
+    render(
+      <TreeView json={SIMPLE_OBJECT} onActivePathChange={onActivePathChange} />,
+    );
+
+    const rows = document.querySelectorAll(".tree-row");
+    fireEvent.mouseEnter(rows[1]);
+
+    expect(onActivePathChange).toHaveBeenCalledWith(
+      expect.stringMatching(/^\$\./),
+    );
+  });
+
+  it("does not throw when onActivePathChange is not provided and a row is hovered", () => {
+    render(<TreeView json={SIMPLE_OBJECT} />);
+    const rows = document.querySelectorAll(".tree-row");
+    expect(() => fireEvent.mouseEnter(rows[1])).not.toThrow();
+  });
+
+  it("still updates the internal breadcrumb when onActivePathChange is also provided", () => {
+    const onActivePathChange = vi.fn();
+    render(
+      <TreeView json={SIMPLE_OBJECT} onActivePathChange={onActivePathChange} />,
+    );
+
+    const rows = document.querySelectorAll(".tree-row");
+    fireEvent.mouseEnter(rows[1]);
+
+    const breadcrumb = document.querySelector(".tree-breadcrumb");
+    expect(breadcrumb?.textContent).not.toBe("$");
+    expect(onActivePathChange).toHaveBeenCalledWith(breadcrumb?.textContent);
+  });
+});
+
 // ── 15. Custom event: tree:collapse-all ──────────────────────────────────────
 
 describe("custom event — tree:collapse-all", () => {

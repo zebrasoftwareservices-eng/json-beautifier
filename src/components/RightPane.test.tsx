@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { RightPane } from "./RightPane";
 import type { CodeEditorError } from "./CodeEditor";
 
@@ -176,8 +176,9 @@ describe("RightPane — tab list", () => {
     }
   });
 
-  it("adds the 'tab-btn--error' class to the Error tab button when activeTab is 'error'", () => {
-    renderRightPane({ activeTab: "error" });
+  it("adds the 'tab-btn--error' class to the Error tab button when activeTab is 'error' and JSON is invalid", () => {
+    const error: CodeEditorError = { message: "Unexpected token" };
+    renderRightPane({ activeTab: "error", error });
     const errorTab = screen.getByRole("tab", { name: "Error" });
     expect(errorTab.className).toContain("tab-btn--error");
   });
@@ -186,6 +187,182 @@ describe("RightPane — tab list", () => {
     renderRightPane({ activeTab: "tree" });
     const errorTab = screen.getByRole("tab", { name: "Error" });
     expect(errorTab.className).not.toContain("tab-btn--error");
+  });
+});
+
+describe("RightPane — tab select", () => {
+  it("renders a select.tab-select alongside the tablist", () => {
+    renderRightPane();
+    const select = document.querySelector("select.tab-select");
+    expect(select).toBeInTheDocument();
+    expect(screen.getByRole("tablist")).toBeInTheDocument();
+  });
+
+  it("select's value reflects the active tab", () => {
+    renderRightPane({ activeTab: "table" });
+    const select = document.querySelector(
+      "select.tab-select",
+    ) as HTMLSelectElement;
+    expect(select.value).toBe("table");
+  });
+
+  it("calls onTabChange with the selected tab id when the select changes", async () => {
+    const onTabChange = vi.fn();
+    render(<RightPane output="" activeTab="tree" onTabChange={onTabChange} />);
+    const select = document.querySelector(
+      "select.tab-select",
+    ) as HTMLSelectElement;
+    const user = userEvent.setup();
+    await user.selectOptions(select, "table");
+    expect(onTabChange).toHaveBeenCalledWith("table");
+  });
+
+  it("lists all tab ids as options", () => {
+    renderRightPane();
+    const select = document.querySelector(
+      "select.tab-select",
+    ) as HTMLSelectElement;
+    const values = Array.from(select.options).map((o) => o.value);
+    expect(values).toEqual([
+      "tree",
+      "code",
+      "error",
+      "repair",
+      "table",
+      "diff",
+      "schema",
+    ]);
+  });
+});
+
+describe("RightPane — Error tab error class", () => {
+  it("does not add tab-btn--error class when error is null", () => {
+    renderRightPane({ activeTab: "error", error: null });
+    const errorTab = screen.getByRole("tab", { name: "Error" });
+    expect(errorTab.className).not.toContain("tab-btn--error");
+  });
+
+  it("does not add tab-btn--error class when error is undefined", () => {
+    renderRightPane({ activeTab: "error", error: undefined });
+    const errorTab = screen.getByRole("tab", { name: "Error" });
+    expect(errorTab.className).not.toContain("tab-btn--error");
+  });
+
+  it("adds tab-btn--error class when error prop is truthy, even while active", () => {
+    const error: CodeEditorError = { message: "Unexpected token" };
+    renderRightPane({ activeTab: "error", error });
+    const errorTab = screen.getByRole("tab", { name: "Error" });
+    expect(errorTab.className).toContain("tab-btn--error");
+    expect(errorTab.className).toContain("active");
+  });
+
+  it("adds tab-btn--error class when error prop is truthy and tab is not active", () => {
+    const error: CodeEditorError = { message: "Unexpected token" };
+    renderRightPane({ activeTab: "tree", error });
+    const errorTab = screen.getByRole("tab", { name: "Error" });
+    expect(errorTab.className).toContain("tab-btn--error");
+    expect(errorTab.className).not.toContain("active");
+  });
+});
+
+describe("RightPane — tab strip contextual controls", () => {
+  it("shows 'Copy path' button when activeTab is 'tree'", () => {
+    renderRightPane({ activeTab: "tree" });
+    expect(
+      screen.getByRole("button", { name: "Copy path" }),
+    ).toBeInTheDocument();
+  });
+
+  it("does not show 'Wrap' button when activeTab is 'tree'", () => {
+    renderRightPane({ activeTab: "tree" });
+    expect(
+      screen.queryByRole("button", { name: "Wrap" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows 'Wrap' button when activeTab is 'code'", () => {
+    renderRightPane({ activeTab: "code" });
+    expect(screen.getByRole("button", { name: "Wrap" })).toBeInTheDocument();
+  });
+
+  it("does not show 'Copy path' button when activeTab is 'code'", () => {
+    renderRightPane({ activeTab: "code" });
+    expect(
+      screen.queryByRole("button", { name: "Copy path" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows neither 'Copy path' nor 'Wrap' when activeTab is 'table'", () => {
+    renderRightPane({ activeTab: "table" });
+    expect(
+      screen.queryByRole("button", { name: "Copy path" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Wrap" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows neither control for other tabs (e.g. 'error', 'repair', 'diff', 'schema')", () => {
+    for (const tab of ["error", "repair", "diff", "schema"] as const) {
+      const { unmount } = renderRightPane({ activeTab: tab });
+      expect(
+        screen.queryByRole("button", { name: "Copy path" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Wrap" }),
+      ).not.toBeInTheDocument();
+      unmount();
+    }
+  });
+});
+
+describe("RightPane — Wrap toggle", () => {
+  it("starts with aria-pressed=false and no 'active' class", () => {
+    renderRightPane({ activeTab: "code" });
+    const wrapBtn = screen.getByRole("button", { name: "Wrap" });
+    expect(wrapBtn).toHaveAttribute("aria-pressed", "false");
+    expect(wrapBtn.className).not.toContain("active");
+  });
+
+  it("toggles aria-pressed to true and adds 'active' class on click", async () => {
+    renderRightPane({ activeTab: "code" });
+    const wrapBtn = screen.getByRole("button", { name: "Wrap" });
+    const user = userEvent.setup();
+    await user.click(wrapBtn);
+    expect(wrapBtn).toHaveAttribute("aria-pressed", "true");
+    expect(wrapBtn.className).toContain("active");
+  });
+
+  it("toggles back to aria-pressed=false on a second click", async () => {
+    renderRightPane({ activeTab: "code" });
+    const wrapBtn = screen.getByRole("button", { name: "Wrap" });
+    const user = userEvent.setup();
+    await user.click(wrapBtn);
+    await user.click(wrapBtn);
+    expect(wrapBtn).toHaveAttribute("aria-pressed", "false");
+    expect(wrapBtn.className).not.toContain("active");
+  });
+});
+
+describe("RightPane — Copy path", () => {
+  let writeTextMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: writeTextMock },
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  it("calls navigator.clipboard.writeText with '$' by default when nothing has been hovered", () => {
+    // fireEvent is used instead of userEvent: userEvent.setup() replaces
+    // navigator.clipboard internally even with writeToClipboard:false, which
+    // breaks writeTextMock (see TreeView.test.tsx for the same pattern).
+    renderRightPane({ activeTab: "tree", output: '{"a":1}' });
+    fireEvent.click(screen.getByRole("button", { name: "Copy path" }));
+    expect(writeTextMock).toHaveBeenCalledWith("$");
   });
 });
 
