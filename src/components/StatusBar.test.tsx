@@ -178,11 +178,41 @@ describe("StatusBar — privacy copy", () => {
   });
 });
 
-// ── 8. Root role ──────────────────────────────────────────────────────────────
+// ── 8. Status role on the validity dot ──────────────────────────────────────────
 
-describe("StatusBar — root element", () => {
-  it('exposes a "status" role on the root element', () => {
-    render(<StatusBar {...baseProps} />);
-    expect(screen.getByRole("status")).toBeInTheDocument();
+describe("StatusBar — status role on the validity dot", () => {
+  it('exposes exactly one "status" role element, on the dot, with accessible name "Valid JSON" when state is valid', () => {
+    const { container } = render(<StatusBar {...baseProps} state="valid" />);
+    const statusEls = screen.getAllByRole("status");
+    expect(statusEls).toHaveLength(1);
+    expect(statusEls[0]).toHaveClass("status-bar__dot");
+    expect(statusEls[0]).toHaveAccessibleName("Valid JSON");
+    // Visible text span is hidden from the accessibility tree.
+    const textSpan = container.querySelector(
+      ".status-bar__left > span[aria-hidden='true']",
+    );
+    expect(textSpan).toHaveTextContent("Valid JSON");
+  });
+
+  it('exposes exactly one "status" role element with accessible name "Ready" when state is idle', () => {
+    render(<StatusBar {...baseProps} state="idle" />);
+    const statusEls = screen.getAllByRole("status");
+    expect(statusEls).toHaveLength(1);
+    expect(statusEls[0]).toHaveAccessibleName("Ready");
+  });
+
+  it('exposes exactly one "status" role element with accessible name "Invalid JSON · 2 errors" when state is invalid', () => {
+    render(<StatusBar {...baseProps} state="invalid" errorCount={2} />);
+    const statusEls = screen.getAllByRole("status");
+    expect(statusEls).toHaveLength(1);
+    expect(statusEls[0]).toHaveAccessibleName("Invalid JSON · 2 errors");
+  });
+
+  it("does not expose a status role on the visible text span (role moved to the dot)", () => {
+    render(<StatusBar {...baseProps} state="valid" />);
+    const statusEls = screen.getAllByRole("status");
+    expect(statusEls[0].tagName).toBe("SPAN");
+    expect(statusEls[0]).toHaveClass("status-bar__dot");
+    expect(statusEls[0]).not.toHaveTextContent("Valid JSON");
   });
 });

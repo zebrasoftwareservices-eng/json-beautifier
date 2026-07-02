@@ -93,7 +93,7 @@ function ErrorBanner({
   }
 
   return (
-    <div className="error-panel">
+    <div className="error-panel" role="alert">
       <div className="error-summary">
         <IconAlertTriangle
           size={18}

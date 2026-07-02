@@ -59,6 +59,7 @@ export function EditorPanel({
         onDragEnter={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
+        aria-dropeffect={isDragging ? "copy" : "none"}
       >
         <CodeEditor
           value={value}
@@ -71,7 +72,7 @@ export function EditorPanel({
         />
         {!value && !isDragging && uploadProgress === null && emptyState}
         {isDragging && (
-          <div className="drop-overlay" aria-hidden="true">
+          <div className="drop-overlay" role="status" aria-live="polite">
             <span>Drop JSON file to load</span>
           </div>
         )}

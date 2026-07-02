@@ -70,4 +70,34 @@ describe("ThemeToggle", () => {
       screen.getByRole("button", { name: "Toggle theme" }),
     ).toHaveAttribute("title", "Switch to light mode");
   });
+
+  it('has aria-pressed="false" when theme is light', () => {
+    currentTheme = "light";
+    render(<ThemeToggle />);
+    expect(
+      screen.getByRole("button", { name: "Toggle theme" }),
+    ).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it('has aria-pressed="true" when theme is dark', () => {
+    currentTheme = "dark";
+    render(<ThemeToggle />);
+    expect(
+      screen.getByRole("button", { name: "Toggle theme" }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("flips aria-pressed after toggling the underlying theme state", () => {
+    currentTheme = "light";
+    const { rerender } = render(<ThemeToggle />);
+    expect(
+      screen.getByRole("button", { name: "Toggle theme" }),
+    ).toHaveAttribute("aria-pressed", "false");
+
+    currentTheme = "dark";
+    rerender(<ThemeToggle />);
+    expect(
+      screen.getByRole("button", { name: "Toggle theme" }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
 });

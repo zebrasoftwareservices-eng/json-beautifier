@@ -15,3 +15,16 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Default focus-visible ring for any interactive element without a
+   component-specific override. Component rules with higher selector
+   specificity (e.g. .status-bar__commands) still win where they exist. */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}

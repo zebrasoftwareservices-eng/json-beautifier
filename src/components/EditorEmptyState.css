@@ -73,6 +73,12 @@
   gap: 6px;
 }
 
+@media (max-width: 719px) {
+  .editor-empty-state__btn {
+    min-height: 44px;
+  }
+}
+
 .editor-empty-state__kbd {
   display: inline-flex;
   align-items: center;

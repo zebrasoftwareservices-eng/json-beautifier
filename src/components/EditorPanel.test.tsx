@@ -160,6 +160,30 @@ describe("EditorPanel — drag and drop", () => {
     dropZone.dispatchEvent(event);
     expect(onDrop).toHaveBeenCalled();
   });
+
+  it('sets aria-dropeffect="none" on the drop zone when isDragging is false', () => {
+    renderEditorPanel({ isDragging: false });
+    const dropZone = document.querySelector(".drop-zone");
+    expect(dropZone).toHaveAttribute("aria-dropeffect", "none");
+  });
+
+  it('sets aria-dropeffect="copy" on the drop zone when isDragging is true', () => {
+    renderEditorPanel({ isDragging: true });
+    const dropZone = document.querySelector(".drop-zone");
+    expect(dropZone).toHaveAttribute("aria-dropeffect", "copy");
+  });
+
+  it('exposes the drop overlay via role="status" when isDragging is true', () => {
+    renderEditorPanel({ isDragging: true });
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("Drop JSON file to load");
+    expect(status).toHaveAttribute("aria-live", "polite");
+  });
+
+  it('does not expose a role="status" element when isDragging is false', () => {
+    renderEditorPanel({ isDragging: false });
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
 });
 
 describe("EditorPanel — upload progress", () => {

@@ -10,6 +10,7 @@ export function ThemeToggle() {
       className="theme-toggle"
       onClick={toggleTheme}
       aria-label="Toggle theme"
+      aria-pressed={isDark}
       title={isDark ? "Switch to light mode" : "Switch to dark mode"}
     >
       {isDark ? (

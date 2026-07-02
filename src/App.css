@@ -133,7 +133,7 @@
 }
 
 .auto-toggle__track:focus-visible {
-  box-shadow: 0 0 0 2px var(--accent-border);
+  box-shadow: var(--ring-focus);
 }
 
 .auto-toggle__track--on {
@@ -397,7 +397,7 @@ button.toolbar-btn--clear-armed:hover:not(:disabled) {
 }
 
 .split-handle:focus-visible {
-  box-shadow: 0 0 0 2px var(--accent-border);
+  box-shadow: var(--ring-focus);
 }
 
 /* 3-dot drag indicator using box-shadow */
@@ -508,6 +508,11 @@ button.toolbar-btn--clear-armed:hover:not(:disabled) {
   background: var(--surface-hover);
 }
 
+.tab-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
 .tab-btn.active {
   font-weight: 600;
   color: var(--accent-text);
@@ -580,6 +585,12 @@ button.toolbar-btn--clear-armed:hover:not(:disabled) {
 
   .tab-select {
     display: block;
+    min-height: 44px;
+  }
+
+  .tab-strip__ctrl-btn {
+    min-height: 44px;
+    min-width: 44px;
   }
 }
 
@@ -1276,7 +1287,8 @@ mark.tree-match {
 
   /* Touch target compliance for buttons in scrollable content */
   .error-summary__fix-btn,
-  .error-summary__jump-btn {
+  .error-summary__jump-btn,
+  .repair-panel__accept-btn {
     min-height: 44px;
   }
 }
