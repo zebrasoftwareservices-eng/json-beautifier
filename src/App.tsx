@@ -501,6 +501,10 @@ export default function App({ initialTab = "tree" }: AppProps) {
               50,
             );
             break;
+          case "l":
+            e.preventDefault();
+            setUrlDialogOpen(true);
+            break;
         }
       }
     }
@@ -733,6 +737,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
             isPartialTree={
               validationStatus === "invalid" && partialJson !== null
             }
+            isEmpty={!input.trim()}
           />
         }
         statusBar={

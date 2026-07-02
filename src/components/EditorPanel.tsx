@@ -65,7 +65,7 @@ export function EditorPanel({
           error={error}
           placeholder={placeholder}
         />
-        {!value && emptyState}
+        {!value && !isDragging && uploadProgress === null && emptyState}
         {isDragging && (
           <div className="drop-overlay" aria-hidden="true">
             <span>Drop JSON file to load</span>

@@ -87,6 +87,25 @@ describe("EditorPanel — empty state", () => {
     renderEditorPanel({ value: "" });
     expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
   });
+
+  it("does not render emptyState when value is empty and isDragging is true (avoids colliding with drop overlay)", () => {
+    renderEditorPanel({
+      value: "",
+      isDragging: true,
+      emptyState: <div data-testid="empty-state">Empty!</div>,
+    });
+    expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
+    expect(screen.getByText("Drop JSON file to load")).toBeInTheDocument();
+  });
+
+  it("does not render emptyState when value is empty and an upload is in progress (avoids a click racing the in-flight file read)", () => {
+    renderEditorPanel({
+      value: "",
+      uploadProgress: 42,
+      emptyState: <div data-testid="empty-state">Empty!</div>,
+    });
+    expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
+  });
 });
 
 describe("EditorPanel — drag and drop", () => {
