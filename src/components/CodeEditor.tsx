@@ -51,10 +51,16 @@ const errorLineField = StateField.define<DecorationSet>({
   provide: (f) => EditorView.decorations.from(f),
 });
 
+export interface CodeEditorCursor {
+  line: number;
+  column: number;
+}
+
 interface CodeEditorProps {
   value: string;
   onChange?: (value: string) => void;
   onPaste?: (value: string) => void;
+  onCursorChange?: (cursor: CodeEditorCursor) => void;
   error?: CodeEditorError | null;
   readOnly?: boolean;
   placeholder?: string;
@@ -64,6 +70,7 @@ export function CodeEditor({
   value,
   onChange,
   onPaste,
+  onCursorChange,
   error,
   readOnly = false,
   placeholder,
@@ -72,10 +79,12 @@ export function CodeEditor({
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
   const onPasteRef = useRef(onPaste);
+  const onCursorChangeRef = useRef(onCursorChange);
   const justPastedRef = useRef(false);
   useEffect(() => {
     onChangeRef.current = onChange;
     onPasteRef.current = onPaste;
+    onCursorChangeRef.current = onCursorChange;
   });
 
   // Create editor on mount
@@ -102,15 +111,23 @@ export function CodeEditor({
       errorLineField,
       keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap]),
       EditorView.updateListener.of((update) => {
-        if (!update.docChanged) {
-          if (justPastedRef.current) justPastedRef.current = false;
-          return;
-        }
-        const newValue = update.state.doc.toString();
-        onChangeRef.current?.(newValue);
-        if (justPastedRef.current) {
+        if (update.docChanged) {
+          const newValue = update.state.doc.toString();
+          onChangeRef.current?.(newValue);
+          if (justPastedRef.current) {
+            justPastedRef.current = false;
+            onPasteRef.current?.(newValue);
+          }
+        } else if (justPastedRef.current) {
           justPastedRef.current = false;
-          onPasteRef.current?.(newValue);
+        }
+        if (update.docChanged || update.selectionSet) {
+          const pos = update.state.selection.main.head;
+          const line = update.state.doc.lineAt(pos);
+          onCursorChangeRef.current?.({
+            line: line.number,
+            column: pos - line.from + 1,
+          });
         }
       }),
       EditorView.domEventHandlers({
