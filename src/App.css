@@ -497,7 +497,7 @@ button.toolbar-btn--clear-armed:hover:not(:disabled) {
   border-bottom-color: var(--accent);
 }
 
-.tab-btn--error {
+.tab-btn.active.tab-btn--error {
   color: var(--error);
   background: var(--error-bg);
   border-bottom-color: var(--error);
@@ -625,8 +625,7 @@ button.toolbar-btn--clear-armed:hover:not(:disabled) {
   align-items: center;
   padding: 1px 5px;
   border-radius: 4px;
-  border: 1px solid
-    color-mix(in srgb, var(--text-on-accent, #fff) 35%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-on-accent) 35%, transparent);
   font-size: 10px;
   font-family: var(--mono);
   letter-spacing: 0;

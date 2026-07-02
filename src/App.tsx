@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import "./App.css";
 import { useJsonWorker } from "./worker/useJsonWorker";
-import type { CodeEditorError } from "./components/CodeEditor";
+import type {
+  CodeEditorError,
+  CodeEditorJumpTarget,
+} from "./components/CodeEditor";
 import { EditorPanel } from "./components/EditorPanel";
 import { AppShell } from "./components/AppShell";
 import { SAMPLE_JSON } from "./components/ActionBar";
@@ -82,11 +85,9 @@ export default function App({ initialTab = "tree" }: AppProps) {
     line: 1,
     column: 1,
   });
-  const [jumpTarget, setJumpTarget] = useState<{
-    line: number;
-    column?: number;
-    nonce: number;
-  } | null>(null);
+  const [jumpTarget, setJumpTarget] = useState<CodeEditorJumpTarget | null>(
+    null,
+  );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const latestLoadIdRef = useRef(0);
@@ -306,8 +307,10 @@ export default function App({ initialTab = "tree" }: AppProps) {
   async function handleAutoFix() {
     if (!input.trim() || validationStatus !== "invalid") return;
     setProcessing(true);
+    const autoFixId = ++latestValidateIdRef.current;
     try {
       const result = await process("repair", input);
+      if (autoFixId !== latestValidateIdRef.current) return; // input changed while repairing
       if (!result.ok) {
         setError({ message: result.message });
         setValidationStatus("invalid");
@@ -315,11 +318,11 @@ export default function App({ initialTab = "tree" }: AppProps) {
       }
       const fixedText = result.result;
       track.jsonRepaired();
-      latestValidateIdRef.current += 1;
       setInput(fixedText);
       setPartialJson(null);
 
       const validation = await process("validate", fixedText);
+      if (autoFixId !== latestValidateIdRef.current) return; // input changed while validating
       if (validation.ok) {
         setError(null);
         setHasLargeIntegers(validation.hasLargeIntegers ?? false);

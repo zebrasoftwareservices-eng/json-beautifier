@@ -1440,7 +1440,9 @@ describe("Keyboard shortcut Ctrl+R / Cmd+R → Fix automatically (handleAutoFix)
     await typeInvalidAndWait(inputArea);
 
     // Open the command palette (Ctrl+K)
-    fireEvent.keyDown(window, { ctrlKey: true, key: "k" });
+    await act(async () => {
+      fireEvent.keyDown(window, { ctrlKey: true, key: "k" });
+    });
     expect(screen.getByRole("dialog")).toBeInTheDocument();
 
     await act(async () => {

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { EditorState, StateEffect, StateField } from "@codemirror/state";
+import { EditorState, StateEffect, StateField, Text } from "@codemirror/state";
 import {
   EditorView,
   Decoration,
@@ -24,6 +24,18 @@ export interface CodeEditorError {
   line?: number;
   column?: number;
   suggestion?: string;
+}
+
+// Clamp a (possibly out-of-range) line/column pair to a valid doc offset.
+function clampPositionToLine(
+  doc: Text,
+  line: number,
+  column: number | undefined,
+): number {
+  const lineNum = Math.max(1, Math.min(line, doc.lines));
+  const lineObj = doc.line(lineNum);
+  const col = Math.max(0, (column ?? 1) - 1);
+  return Math.max(lineObj.from, Math.min(lineObj.from + col, lineObj.to));
 }
 
 const setErrorLine = StateEffect.define<number | null>();
@@ -215,13 +227,10 @@ export function CodeEditor({
     }
 
     const doc = view.state.doc;
-    let from = 0;
-    if (error.line != null) {
-      const lineNum = Math.max(1, Math.min(error.line, doc.lines));
-      const lineObj = doc.line(lineNum);
-      const col = Math.max(0, (error.column ?? 1) - 1);
-      from = Math.max(lineObj.from, Math.min(lineObj.from + col, lineObj.to));
-    }
+    const from =
+      error.line != null
+        ? clampPositionToLine(doc, error.line, error.column)
+        : 0;
 
     const diagnostics: Diagnostic[] = [
       {
@@ -240,13 +249,10 @@ export function CodeEditor({
   useEffect(() => {
     const view = viewRef.current;
     if (!view || !jumpTarget) return;
-    const doc = view.state.doc;
-    const lineNum = Math.max(1, Math.min(jumpTarget.line, doc.lines));
-    const lineObj = doc.line(lineNum);
-    const col = Math.max(0, (jumpTarget.column ?? 1) - 1);
-    const pos = Math.max(
-      lineObj.from,
-      Math.min(lineObj.from + col, lineObj.to),
+    const pos = clampPositionToLine(
+      view.state.doc,
+      jumpTarget.line,
+      jumpTarget.column,
     );
     view.dispatch({
       selection: { anchor: pos },
