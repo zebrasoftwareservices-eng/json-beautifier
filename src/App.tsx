@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import "./App.css";
 import { useJsonWorker } from "./worker/useJsonWorker";
+import { useTheme } from "./hooks/useTheme";
 import type {
   CodeEditorError,
   CodeEditorJumpTarget,
@@ -17,6 +19,7 @@ import {
 } from "./components/CommandPalette";
 import { IdentityBar } from "./components/IdentityBar";
 import { StatusBar } from "./components/StatusBar";
+import { Toast } from "./components/Toast";
 import type { CodeEditorCursor } from "./components/CodeEditor";
 import {
   RightPane,
@@ -88,16 +91,30 @@ export default function App({ initialTab = "tree" }: AppProps) {
   const [jumpTarget, setJumpTarget] = useState<CodeEditorJumpTarget | null>(
     null,
   );
+  const [toast, setToast] = useState<{ id: number; message: string } | null>(
+    null,
+  );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const latestLoadIdRef = useRef(0);
   const latestValidateIdRef = useRef(0);
   const jumpNonceRef = useRef(0);
   const prevHasErrorRef = useRef(false);
+  const toastIdRef = useRef(0);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { process } = useJsonWorker();
+  const navigate = useNavigate();
+  const [, toggleTheme] = useTheme();
   const autoFormatTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const validateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const formatInFlightRef = useRef(false);
+
+  const showToast = useCallback((message: string) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastIdRef.current += 1;
+    setToast({ id: toastIdRef.current, message });
+    toastTimerRef.current = setTimeout(() => setToast(null), 2500);
+  }, []);
 
   // Accepts optional content to format (avoids stale closure on state)
   // Accepts optional content to format (avoids stale closure on state).
@@ -382,6 +399,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
       await navigator.clipboard.writeText(output);
       setCopyLabel("Copied!");
       setTimeout(() => setCopyLabel("Copy"), 1500);
+      showToast("Copied to clipboard");
     } catch {
       setError({ message: "Copy failed — please copy the output manually." });
     }
@@ -392,14 +410,16 @@ export default function App({ initialTab = "tree" }: AppProps) {
     const blob = new Blob([output], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
     // Derive filename: strip old extension and use .json
-    a.download = fileName
+    const downloadName = fileName
       ? fileName.replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9._-]/g, "_") +
         ".json"
       : "output.json";
+    a.href = url;
+    a.download = downloadName;
     a.click();
     URL.revokeObjectURL(url);
+    showToast(`Downloaded ${downloadName}`);
   }
 
   async function handlePaste() {
@@ -592,6 +612,10 @@ export default function App({ initialTab = "tree" }: AppProps) {
             e.preventDefault();
             handleAutoFix();
             break;
+          case "y":
+            e.preventDefault();
+            navigate("/json-to-yaml");
+            break;
         }
       }
     }
@@ -606,6 +630,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
     handleCopy,
     handleDownload,
     handleClear,
+    navigate,
     processing,
     paletteOpen,
     urlDialogOpen,
@@ -622,6 +647,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
     return () => {
       if (autoFormatTimerRef.current) clearTimeout(autoFormatTimerRef.current);
       if (validateTimerRef.current) clearTimeout(validateTimerRef.current);
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     };
   }, []);
 
@@ -682,6 +708,12 @@ export default function App({ initialTab = "tree" }: AppProps) {
         disabled: processing || validationStatus !== "invalid",
       },
       {
+        id: "convert",
+        label: "Convert JSON",
+        shortcut: `${m}Y`,
+        action: () => navigate("/json-to-yaml"),
+      },
+      {
         id: "copy",
         label: "Copy Output",
         shortcut: `${m}${s}C`,
@@ -698,7 +730,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
       {
         id: "load-url",
         label: "Load from URL",
-        shortcut: `${m}${s}U`,
+        shortcut: `${m}L`,
         action: () => setUrlDialogOpen(true),
       },
       {
@@ -721,6 +753,12 @@ export default function App({ initialTab = "tree" }: AppProps) {
           window.dispatchEvent(new CustomEvent("tree:collapse-all")),
       },
       {
+        id: "toggle-theme",
+        label: "Toggle Theme",
+        shortcut: "",
+        action: toggleTheme,
+      },
+      {
         id: "clear",
         label: "Clear Editor",
         shortcut: isMac ? `${m}${s}⌫` : `${m}${s}Del`,
@@ -736,6 +774,8 @@ export default function App({ initialTab = "tree" }: AppProps) {
       handleCopy,
       handleDownload,
       handleClear,
+      navigate,
+      toggleTheme,
       validationStatus,
       processing,
     ],
@@ -864,6 +904,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
               onClose={() => setPaletteOpen(false)}
               commands={paletteCmds}
             />
+            <Toast key={toast?.id} message={toast?.message ?? null} />
           </>
         }
       />

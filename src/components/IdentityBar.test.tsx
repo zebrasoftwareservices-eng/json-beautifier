@@ -118,7 +118,7 @@ describe("search button", () => {
 
   it("shows ⌘K or Ctrl+K kbd chip", () => {
     renderBar();
-    const kbd = document.querySelector(".identity-bar__kbd");
+    const kbd = document.querySelector(".identity-bar__search .kbd");
     expect(kbd).not.toBeNull();
     expect(["⌘K", "Ctrl+K"]).toContain(kbd!.textContent);
   });

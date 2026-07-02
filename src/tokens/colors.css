@@ -38,6 +38,8 @@
   --shadow-xl:
     rgba(0, 0, 0, 0.12) 0 20px 40px -8px, rgba(0, 0, 0, 0.06) 0 8px 16px -4px;
 
+  --scrim: rgba(15, 23, 42, 0.45);
+
   color-scheme: light;
 }
 
@@ -79,6 +81,8 @@
     rgba(0, 0, 0, 0.4) 0 8px 20px -4px, rgba(0, 0, 0, 0.25) 0 3px 6px -1px;
   --shadow-xl:
     rgba(0, 0, 0, 0.6) 0 24px 48px -12px, rgba(0, 0, 0, 0.4) 0 12px 24px -6px;
+
+  --scrim: rgba(2, 6, 23, 0.65);
 
   color-scheme: dark;
 }
@@ -122,6 +126,8 @@
       rgba(0, 0, 0, 0.4) 0 8px 20px -4px, rgba(0, 0, 0, 0.25) 0 3px 6px -1px;
     --shadow-xl:
       rgba(0, 0, 0, 0.6) 0 24px 48px -12px, rgba(0, 0, 0, 0.4) 0 12px 24px -6px;
+
+    --scrim: rgba(2, 6, 23, 0.65);
 
     color-scheme: dark;
   }
