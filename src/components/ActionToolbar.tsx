@@ -22,17 +22,17 @@ const SC = {
   repair: `${m}${s}R`,
 };
 
-const INDENT_OPTIONS: { label: string; value: number }[] = [
+const INDENT_OPTIONS: { label: string; value: number | "\t" }[] = [
   { label: "2", value: 2 },
   { label: "4", value: 4 },
-  { label: "Tab", value: 1 },
+  { label: "Tab", value: "\t" },
 ];
 
 type PrimaryAction = "format" | "minify" | "validate" | "repair";
 
 interface ActionToolbarProps {
-  indent: number;
-  onIndentChange: (n: number) => void;
+  indent: number | "\t";
+  onIndentChange: (n: number | "\t") => void;
   onFormat: () => void;
   onMinify: () => void;
   onValidate: () => void;

@@ -4,6 +4,7 @@ import {
   countNodes,
   MAX_INPUT_BYTES,
   BIGINT_SENTINEL,
+  parseIndent,
 } from "./jsonLogic";
 
 const validJson = '{"name":"Alice","age":30}';
@@ -149,6 +150,125 @@ describe("processJson — indent clamping", () => {
     expect(res.ok).toBe(true);
     if (res.ok) {
       expect(res.result).toContain("\n");
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// JSO-43: parseIndent — normalizes raw indent settings for JSON.stringify
+// ---------------------------------------------------------------------------
+
+describe("parseIndent", () => {
+  it("returns 4 for parseIndent(4)", () => {
+    expect(parseIndent(4)).toBe(4);
+  });
+
+  it("returns 2 for parseIndent(2)", () => {
+    expect(parseIndent(2)).toBe(2);
+  });
+
+  it('passes "\\t" through unchanged (not clamped or coerced to a number)', () => {
+    expect(parseIndent("\t")).toBe("\t");
+  });
+
+  it("clamps 0 up to 1", () => {
+    expect(parseIndent(0)).toBe(1);
+  });
+
+  it("clamps 20 down to 8", () => {
+    expect(parseIndent(20)).toBe(8);
+  });
+
+  it("clamps a negative value up to 1", () => {
+    expect(parseIndent(-5)).toBe(1);
+  });
+
+  it("truncates non-integer numbers", () => {
+    expect(parseIndent(2.9)).toBe(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// JSO-43: processJson — Tab indent produces real tab characters, not "1"
+// ---------------------------------------------------------------------------
+
+describe("processJson — beautify with tab indent", () => {
+  it("indents nested keys with a literal tab character, not a single space", () => {
+    const res = processJson("beautify", validJson, "\t");
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.result).toContain('\n\t"name"');
+      expect(res.result).not.toContain('\n "name"');
+      expect(res.result).not.toContain('\n1"name"');
+    }
+  });
+
+  it("matches JSON.stringify's own tab-indented output exactly", () => {
+    const res = processJson("beautify", validJson, "\t");
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.result).toBe(
+        JSON.stringify({ name: "Alice", age: 30 }, null, "\t"),
+      );
+    }
+  });
+
+  it("indents each nesting level with one additional tab character", () => {
+    const nested = JSON.stringify({ a: { b: 1 } });
+    const res = processJson("beautify", nested, "\t");
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.result).toContain('\n\t"a"');
+      expect(res.result).toContain('\n\t\t"b"');
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// JSO-43: processJson — numeric indent produces exact space-count, not
+// over-indentation (the literal JSO-43 bug was "Tab" mapping to numeric 1)
+// ---------------------------------------------------------------------------
+
+describe("processJson — beautify with numeric indent (exact spacing)", () => {
+  it("indents top-level keys with exactly 4 spaces for indent=4", () => {
+    const res = processJson("beautify", validJson, 4);
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.result).toContain('\n    "name"');
+      // guards against "4 spaces4 spaces"-style duplication/over-indentation
+      expect(res.result).not.toContain("        ");
+    }
+  });
+
+  it("a 3-level-deep object at indent=4 has level-3 content indented exactly 12 spaces", () => {
+    const deep = JSON.stringify({ a: { b: { c: 42 } } });
+    const res = processJson("beautify", deep, 4);
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.result).toBe(JSON.stringify({ a: { b: { c: 42 } } }, null, 4));
+      expect(res.result).toContain('\n            "c": 42');
+      // exactly 12 spaces, not 13+
+      expect(res.result).not.toContain('\n             "c"');
+    }
+  });
+
+  it("the root brace has zero leading whitespace at indent=4", () => {
+    const deep = JSON.stringify({ a: { b: { c: 42 } } });
+    const res = processJson("beautify", deep, 4);
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.result.startsWith("{\n")).toBe(true);
+      expect(res.result[0]).toBe("{");
+    }
+  });
+
+  it("level-1 and level-2 nesting use 4 and 8 spaces respectively at indent=4", () => {
+    const deep = JSON.stringify({ a: { b: { c: 42 } } });
+    const res = processJson("beautify", deep, 4);
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.result).toContain('\n    "a"');
+      expect(res.result).toContain('\n        "b"');
     }
   });
 });

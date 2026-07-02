@@ -234,8 +234,8 @@ describe("ActionToolbar — indent radiogroup", () => {
     );
   });
 
-  it("marks the Tab radio checked when indent is 1", () => {
-    render(<ActionToolbar {...defaultProps} indent={1} />);
+  it("marks the Tab radio checked when indent is '\\t'", () => {
+    render(<ActionToolbar {...defaultProps} indent={"\t"} />);
     expect(screen.getByRole("radio", { name: "Tab" })).toHaveAttribute(
       "aria-checked",
       "true",
@@ -262,11 +262,11 @@ describe("ActionToolbar — indent radiogroup", () => {
     expect(onIndentChange).toHaveBeenCalledWith(4);
   });
 
-  it("calls onIndentChange with 1 when the 'Tab' radio is clicked", () => {
+  it("calls onIndentChange with '\\t' when the 'Tab' radio is clicked", () => {
     const onIndentChange = vi.fn();
     render(<ActionToolbar {...defaultProps} onIndentChange={onIndentChange} />);
     fireEvent.click(screen.getByRole("radio", { name: "Tab" }));
-    expect(onIndentChange).toHaveBeenCalledWith(1);
+    expect(onIndentChange).toHaveBeenCalledWith("\t");
   });
 
   it("disables all indent radios when processing is true", () => {

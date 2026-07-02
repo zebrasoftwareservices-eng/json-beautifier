@@ -36,7 +36,16 @@ function hasBigIntSentinel(value: unknown): boolean {
   return false;
 }
 
-function losslessStringify(value: unknown, indent: number): string {
+export type IndentSetting = number | "\t";
+
+/** Normalizes a raw indent setting into what JSON.stringify expects: "\t" as-is, numbers clamped to 1-8. */
+export function parseIndent(indent: IndentSetting): IndentSetting {
+  if (indent === "\t") return "\t";
+  const normalized = Number.isFinite(indent) ? Math.trunc(indent) : 2;
+  return Math.max(1, Math.min(8, normalized));
+}
+
+function losslessStringify(value: unknown, indent: IndentSetting): string {
   return JSON.stringify(value, null, indent).replace(BIGINT_RE, "$1");
 }
 
@@ -99,7 +108,7 @@ export type ProcessJsonResult =
 export function processJson(
   type: "beautify" | "minify" | "validate",
   input: string,
-  indent = 2,
+  indent: IndentSetting = 2,
 ): ProcessJsonResult {
   const inputBytes = new TextEncoder().encode(input).length;
   if (inputBytes > MAX_INPUT_BYTES) {
@@ -109,9 +118,7 @@ export function processJson(
     };
   }
 
-  const normalizedIndent = Number.isFinite(indent) ? Math.trunc(indent) : 2;
-  const clampedIndent =
-    type === "beautify" ? Math.max(1, Math.min(8, normalizedIndent)) : 0;
+  const clampedIndent = type === "beautify" ? parseIndent(indent) : 0;
 
   const t0 = performance.now();
 
