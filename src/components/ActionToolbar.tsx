@@ -115,7 +115,11 @@ export function ActionToolbar({
           }
           shortcut={repairEnabled ? SC.repair : undefined}
           disabled={processing || !repairEnabled}
-          className={`segmented__item${lastAction === "repair" ? " segmented__item--active" : ""}`}
+          className={`segmented__item${lastAction === "repair" ? " segmented__item--active" : ""}${
+            repairEnabled && lastAction !== "repair"
+              ? " segmented__item--suggested"
+              : ""
+          }`}
           onClick={() => run("repair", onRepair)}
         >
           <IconWand size={14} aria-hidden />

@@ -2,6 +2,7 @@ import {
   CodeEditor,
   type CodeEditorCursor,
   type CodeEditorError,
+  type CodeEditorJumpTarget,
 } from "./CodeEditor";
 import "./EditorPanel.css";
 
@@ -20,6 +21,7 @@ interface EditorPanelProps {
   onDrop: (e: React.DragEvent) => void;
   uploadProgress: number | null;
   emptyState?: React.ReactNode;
+  jumpTarget?: CodeEditorJumpTarget | null;
 }
 
 export function EditorPanel({
@@ -37,6 +39,7 @@ export function EditorPanel({
   onDrop,
   uploadProgress,
   emptyState,
+  jumpTarget,
 }: EditorPanelProps) {
   const statsLabel = error
     ? "1 error"
@@ -64,6 +67,7 @@ export function EditorPanel({
           onCursorChange={onCursorChange}
           error={error}
           placeholder={placeholder}
+          jumpTarget={jumpTarget}
         />
         {!value && !isDragging && uploadProgress === null && emptyState}
         {isDragging && (

@@ -48,20 +48,20 @@ describe("RightPane — ErrorPanel", () => {
     const error: CodeEditorError = { message: "Unexpected token" };
     renderRightPane({ error });
     expect(screen.getByText("Unexpected token")).toBeInTheDocument();
-    expect(screen.getByText("Parse error")).toBeInTheDocument();
+    expect(screen.getByText("Invalid JSON")).toBeInTheDocument();
   });
 
-  it("shows 'Line N, col C' heading when error has line and column", () => {
+  it("shows 'Line N, Column C' location when error has line and column", () => {
     const error: CodeEditorError = {
       message: "Unexpected token",
       line: 3,
       column: 7,
     };
     renderRightPane({ error });
-    expect(screen.getByText("Line 3, col 7")).toBeInTheDocument();
+    expect(screen.getByText("Line 3, Column 7")).toBeInTheDocument();
   });
 
-  it("shows 'Line N' heading when error has line but no column", () => {
+  it("shows 'Line N' location when error has line but no column", () => {
     const error: CodeEditorError = { message: "Unexpected token", line: 5 };
     renderRightPane({ error });
     expect(screen.getByText("Line 5")).toBeInTheDocument();
@@ -95,6 +95,56 @@ describe("RightPane — ErrorPanel", () => {
   });
 });
 
+describe("RightPane — ErrorBanner action buttons", () => {
+  it("calls onAutoFix when 'Fix automatically' is clicked", async () => {
+    const onAutoFix = vi.fn();
+    const error: CodeEditorError = { message: "Unexpected token", line: 3 };
+    renderRightPane({ error, onAutoFix });
+    const user = userEvent.setup();
+    await user.click(
+      screen.getByRole("button", { name: /fix automatically/i }),
+    );
+    expect(onAutoFix).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables 'Fix automatically' when processing is true", () => {
+    const error: CodeEditorError = { message: "Unexpected token", line: 3 };
+    renderRightPane({ error, processing: true });
+    expect(
+      screen.getByRole("button", { name: /fix automatically/i }),
+    ).toBeDisabled();
+  });
+
+  it("does not disable 'Fix automatically' when processing is false or omitted", () => {
+    const error: CodeEditorError = { message: "Unexpected token", line: 3 };
+    renderRightPane({ error, processing: false });
+    expect(
+      screen.getByRole("button", { name: /fix automatically/i }),
+    ).not.toBeDisabled();
+  });
+
+  it("calls onJumpToError when 'Jump to error' is clicked and error.line is set", async () => {
+    const onJumpToError = vi.fn();
+    const error: CodeEditorError = { message: "Unexpected token", line: 3 };
+    renderRightPane({ error, onJumpToError });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /jump to error/i }));
+    expect(onJumpToError).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables 'Jump to error' and does not call onJumpToError when error.line is undefined", async () => {
+    const onJumpToError = vi.fn();
+    const error: CodeEditorError = { message: "Unexpected token" };
+    renderRightPane({ error, onJumpToError });
+    const jumpBtn = screen.getByRole("button", { name: /jump to error/i });
+    expect(jumpBtn).toBeDisabled();
+
+    const user = userEvent.setup();
+    await user.click(jumpBtn);
+    expect(onJumpToError).not.toHaveBeenCalled();
+  });
+});
+
 describe("RightPane — tab list", () => {
   it("renders an 'Error' tab button", () => {
     renderRightPane();
@@ -124,6 +174,18 @@ describe("RightPane — tab list", () => {
     for (const name of tabNames) {
       expect(screen.getByRole("tab", { name })).toBeInTheDocument();
     }
+  });
+
+  it("adds the 'tab-btn--error' class to the Error tab button when activeTab is 'error'", () => {
+    renderRightPane({ activeTab: "error" });
+    const errorTab = screen.getByRole("tab", { name: "Error" });
+    expect(errorTab.className).toContain("tab-btn--error");
+  });
+
+  it("does not add the 'tab-btn--error' class to the Error tab button when a different tab is active", () => {
+    renderRightPane({ activeTab: "tree" });
+    const errorTab = screen.getByRole("tab", { name: "Error" });
+    expect(errorTab.className).not.toContain("tab-btn--error");
   });
 });
 

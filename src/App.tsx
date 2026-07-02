@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import "./App.css";
 import { useJsonWorker } from "./worker/useJsonWorker";
-import type { CodeEditorError } from "./components/CodeEditor";
+import type {
+  CodeEditorError,
+  CodeEditorJumpTarget,
+} from "./components/CodeEditor";
 import { EditorPanel } from "./components/EditorPanel";
 import { AppShell } from "./components/AppShell";
 import { SAMPLE_JSON } from "./components/ActionBar";
@@ -82,10 +85,15 @@ export default function App({ initialTab = "tree" }: AppProps) {
     line: 1,
     column: 1,
   });
+  const [jumpTarget, setJumpTarget] = useState<CodeEditorJumpTarget | null>(
+    null,
+  );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const latestLoadIdRef = useRef(0);
   const latestValidateIdRef = useRef(0);
+  const jumpNonceRef = useRef(0);
+  const prevHasErrorRef = useRef(false);
   const { process } = useJsonWorker();
   const autoFormatTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const validateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -294,6 +302,67 @@ export default function App({ initialTab = "tree" }: AppProps) {
     setActiveTab("tree");
   }
 
+  // ErrorBanner "Fix automatically" (⌘R): repair, apply directly, and
+  // re-validate — distinct from the toolbar's Repair preview-and-accept flow.
+  async function handleAutoFix() {
+    if (!input.trim() || validationStatus !== "invalid") return;
+    setProcessing(true);
+    const autoFixId = ++latestValidateIdRef.current;
+    try {
+      const result = await process("repair", input);
+      if (autoFixId !== latestValidateIdRef.current) return; // input changed while repairing
+      if (!result.ok) {
+        setError({ message: result.message });
+        setValidationStatus("invalid");
+        return;
+      }
+      const fixedText = result.result;
+      track.jsonRepaired();
+      setInput(fixedText);
+      setPartialJson(null);
+
+      const validation = await process("validate", fixedText);
+      if (autoFixId !== latestValidateIdRef.current) return; // input changed while validating
+      if (validation.ok) {
+        setError(null);
+        setHasLargeIntegers(validation.hasLargeIntegers ?? false);
+        setValidationStatus("valid");
+        setActiveTab("tree");
+      } else {
+        const suggestion = getSuggestion(
+          fixedText,
+          validation.message,
+          validation.line,
+        );
+        setError({
+          message: validation.message,
+          line: validation.line,
+          column: validation.column,
+          suggestion: suggestion ?? undefined,
+        });
+        setHasLargeIntegers(false);
+        setValidationStatus("invalid");
+        const repaired = repairJson(fixedText);
+        setPartialJson(repaired.ok ? repaired.result : null);
+      }
+    } catch {
+      setError({ message: "Repair failed — please try again." });
+      setValidationStatus("invalid");
+    } finally {
+      setProcessing(false);
+    }
+  }
+
+  function handleJumpToError() {
+    if (error?.line == null) return;
+    jumpNonceRef.current += 1;
+    setJumpTarget({
+      line: error.line,
+      column: error.column,
+      nonce: jumpNonceRef.current,
+    });
+  }
+
   function handleClear() {
     if (autoFormatTimerRef.current) clearTimeout(autoFormatTimerRef.current);
     if (validateTimerRef.current) clearTimeout(validateTimerRef.current);
@@ -427,6 +496,17 @@ export default function App({ initialTab = "tree" }: AppProps) {
     };
   }, [input, handleValidate]);
 
+  // Error tab auto-activates the moment JSON becomes invalid (not on every
+  // subsequent re-validate while it stays invalid, so it doesn't fight the
+  // user's own tab navigation).
+  useEffect(() => {
+    const hasError = validationStatus === "invalid" && error != null;
+    if (hasError && !prevHasErrorRef.current) {
+      setActiveTab("error");
+    }
+    prevHasErrorRef.current = hasError;
+  }, [validationStatus, error]);
+
   // Called by CodeEditor when user pastes directly into the editor
   const handleEditorPaste = useCallback(
     (pastedValue: string) => {
@@ -443,6 +523,9 @@ export default function App({ initialTab = "tree" }: AppProps) {
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (!(e.metaKey || e.ctrlKey)) return;
+      // Don't let editor shortcuts (especially destructive ones like Clear
+      // and Fix automatically) fire in the background while a modal is open.
+      if (paletteOpen || urlDialogOpen) return;
       const allowedWhileProcessing =
         !e.shiftKey && (e.key === "k" || e.key === "/" || e.key === "f");
       if (processing && !allowedWhileProcessing) return;
@@ -505,6 +588,10 @@ export default function App({ initialTab = "tree" }: AppProps) {
             e.preventDefault();
             setUrlDialogOpen(true);
             break;
+          case "r":
+            e.preventDefault();
+            handleAutoFix();
+            break;
         }
       }
     }
@@ -515,10 +602,13 @@ export default function App({ initialTab = "tree" }: AppProps) {
     handleMinify,
     handleValidate,
     handleRepair,
+    handleAutoFix,
     handleCopy,
     handleDownload,
     handleClear,
     processing,
+    paletteOpen,
+    urlDialogOpen,
   ]);
 
   // Clear stale repair result whenever the editor content changes
@@ -714,6 +804,7 @@ export default function App({ initialTab = "tree" }: AppProps) {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             uploadProgress={uploadProgress}
+            jumpTarget={jumpTarget}
             emptyState={
               <EditorEmptyState
                 onPaste={handlePaste}
@@ -738,6 +829,9 @@ export default function App({ initialTab = "tree" }: AppProps) {
               validationStatus === "invalid" && partialJson !== null
             }
             isEmpty={!input.trim()}
+            onAutoFix={handleAutoFix}
+            onJumpToError={handleJumpToError}
+            processing={processing}
           />
         }
         statusBar={
