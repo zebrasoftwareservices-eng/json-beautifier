@@ -62,7 +62,7 @@ export function useJsonWorker() {
     (
       type: "beautify" | "minify" | "validate" | "repair",
       input: string,
-      indent = 2,
+      indent: number | "\t" = 2,
     ): Promise<WorkerResult> =>
       new Promise((resolve) => {
         const id = nextId++;

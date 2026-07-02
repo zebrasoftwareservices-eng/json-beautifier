@@ -6,6 +6,7 @@ export {
   extractPosition,
   countNodes,
   processJson,
+  parseIndent,
 } from "../lib/json/process";
 
-export type { ProcessJsonResult } from "../lib/json/process";
+export type { ProcessJsonResult, IndentSetting } from "../lib/json/process";
