@@ -1,7 +1,11 @@
+import { IconAlertTriangle } from "@tabler/icons-react";
 import { CodeEditor, type CodeEditorError } from "./CodeEditor";
 import { TreeView } from "./TreeView";
 import { TableView } from "./TableView";
 import { OutputSkeleton } from "./OutputSkeleton";
+
+const isMac =
+  typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
 
 export type TabId =
   | "tree"
@@ -38,6 +42,9 @@ interface RightPaneProps {
   isPartialTree?: boolean;
   /** True when the input editor is empty — shows the onboarding skeleton instead of tab content. */
   isEmpty?: boolean;
+  onAutoFix?: () => void;
+  onJumpToError?: () => void;
+  processing?: boolean;
 }
 
 function Placeholder({ label }: { label: string }) {
@@ -48,12 +55,18 @@ function Placeholder({ label }: { label: string }) {
   );
 }
 
-function ErrorPanel({
+function ErrorBanner({
   error,
   input,
+  onAutoFix,
+  onJumpToError,
+  processing,
 }: {
   error: CodeEditorError | null | undefined;
   input: string | undefined;
+  onAutoFix?: () => void;
+  onJumpToError?: () => void;
+  processing?: boolean;
 }) {
   if (!error) {
     return (
@@ -80,18 +93,51 @@ function ErrorPanel({
 
   return (
     <div className="error-panel">
-      <p className="error-panel__heading">
-        {error.line != null
-          ? `Line ${error.line}${error.column != null ? `, col ${error.column}` : ""}`
-          : "Parse error"}
-      </p>
-      <p className="error-panel__message">{error.message}</p>
-      {error.suggestion && (
-        <p className="error-panel__suggestion">
-          <span className="error-panel__suggestion-label">Did you mean?</span>{" "}
-          {error.suggestion}
-        </p>
-      )}
+      <div className="error-summary">
+        <IconAlertTriangle
+          size={18}
+          className="error-summary__icon"
+          aria-hidden="true"
+        />
+        <div className="error-summary__body">
+          <p className="error-summary__title">Invalid JSON</p>
+          <p className="error-summary__message">{error.message}</p>
+          {error.line != null && (
+            <p className="error-summary__location">
+              {`Line ${error.line}${error.column != null ? `, Column ${error.column}` : ""}`}
+            </p>
+          )}
+          {error.suggestion && (
+            <p className="error-panel__suggestion">
+              <span className="error-panel__suggestion-label">
+                Did you mean?
+              </span>{" "}
+              {error.suggestion}
+            </p>
+          )}
+          <div className="error-summary__actions">
+            <button
+              type="button"
+              className="error-summary__fix-btn"
+              onClick={onAutoFix}
+              disabled={processing}
+            >
+              Fix automatically
+              <kbd className="error-summary__kbd">
+                {isMac ? "⌘R" : "Ctrl+R"}
+              </kbd>
+            </button>
+            <button
+              type="button"
+              className="error-summary__jump-btn secondary"
+              onClick={onJumpToError}
+              disabled={error.line == null}
+            >
+              Jump to error
+            </button>
+          </div>
+        </div>
+      </div>
       {contextSnippet && (
         <pre className="error-panel__snippet">{contextSnippet}</pre>
       )}
@@ -168,6 +214,9 @@ export function RightPane({
   partialJson,
   isPartialTree,
   isEmpty,
+  onAutoFix,
+  onJumpToError,
+  processing,
 }: RightPaneProps) {
   const onKeyDown = (e: React.KeyboardEvent) => {
     const currentIndex = TABS.findIndex((t) => t.id === activeTab);
@@ -196,7 +245,11 @@ export function RightPane({
             role="tab"
             aria-selected={activeTab === tab.id}
             aria-controls={`panel-${tab.id}`}
-            className={`tab-btn${activeTab === tab.id ? " active" : ""}`}
+            className={`tab-btn${activeTab === tab.id ? " active" : ""}${
+              tab.id === "error" && activeTab === "error"
+                ? " tab-btn--error"
+                : ""
+            }`}
             onClick={() => onTabChange(tab.id)}
           >
             {tab.label}
@@ -236,7 +289,13 @@ export function RightPane({
                   placeholder="Output appears here…"
                 />
               ) : tab.id === "error" ? (
-                <ErrorPanel error={error} input={input} />
+                <ErrorBanner
+                  error={error}
+                  input={input}
+                  onAutoFix={onAutoFix}
+                  onJumpToError={onJumpToError}
+                  processing={processing}
+                />
               ) : tab.id === "repair" ? (
                 <RepairPanel
                   repairResult={repairResult}

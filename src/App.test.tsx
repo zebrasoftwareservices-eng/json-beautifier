@@ -1247,6 +1247,212 @@ describe("Memory warning banner", () => {
 });
 
 // ---------------------------------------------------------------------------
+// JSO-39: Error tab auto-switch on invalid JSON
+// ---------------------------------------------------------------------------
+
+describe("Error tab auto-switch on invalid JSON", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("automatically switches activeTab to 'error' once JSON becomes invalid, without clicking the Error tab or using a shortcut", async () => {
+    vi.useFakeTimers();
+    render(<App />, { wrapper });
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    fireEvent.change(inputArea, { target: { value: "not valid json" } });
+
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+
+    expect(screen.getByTestId("active-tab").textContent).toBe("error");
+  });
+
+  it("does not force the tab back to 'error' on a re-validate while JSON stays invalid, so it doesn't fight manual navigation", async () => {
+    vi.useFakeTimers();
+    render(<App />, { wrapper });
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    fireEvent.change(inputArea, { target: { value: "not valid json" } });
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(screen.getByTestId("active-tab").textContent).toBe("error");
+
+    // Manually navigate away from the error tab
+    const codeBtn = screen.getByRole("button", { name: "Code" });
+    await act(async () => {
+      fireEvent.click(codeBtn);
+    });
+    expect(screen.getByTestId("active-tab").textContent).toBe("code");
+
+    // Edit the input again — JSON remains invalid, re-validation fires again
+    fireEvent.change(inputArea, { target: { value: "still not valid json" } });
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+
+    // Should stay on 'code' — this is a transition-triggered effect, not a
+    // "stay on error while invalid" effect.
+    expect(screen.getByTestId("active-tab").textContent).toBe("code");
+  });
+
+  it("does not switch to the error tab when JSON becomes valid", async () => {
+    vi.useFakeTimers();
+    render(<App />, { wrapper });
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    fireEvent.change(inputArea, { target: { value: validJson } });
+
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+
+    expect(screen.getByTestId("active-tab").textContent).not.toBe("error");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// JSO-39: Ctrl+R / Cmd+R → handleAutoFix ("Fix automatically")
+// ---------------------------------------------------------------------------
+
+describe("Keyboard shortcut Ctrl+R / Cmd+R → Fix automatically (handleAutoFix)", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  // handleAutoFix only runs once validationStatus is actually "invalid"
+  // (guards against silently "fixing" already-valid JSON) — wait for the
+  // 300ms debounced auto-validate before firing the shortcut.
+  async function typeInvalidAndWait(inputArea: HTMLTextAreaElement) {
+    vi.useFakeTimers();
+    fireEvent.change(inputArea, { target: { value: '{"a":1,}' } });
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+  }
+
+  it("repairs invalid JSON with a trailing comma, applies the repaired text to the input, and validates it as valid", async () => {
+    render(<App />, { wrapper });
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    await typeInvalidAndWait(inputArea);
+
+    await act(async () => {
+      fireEvent.keyDown(window, { ctrlKey: true, key: "r" });
+    });
+
+    expect(inputArea.value).not.toContain(",}");
+    expect(JSON.parse(inputArea.value)).toEqual({ a: 1 });
+
+    const statusBar = document.querySelector(".status-bar");
+    expect(statusBar?.textContent).toMatch(/Valid JSON/);
+  });
+
+  it("switches activeTab to 'tree' after a successful auto-fix", async () => {
+    render(<App />, { wrapper });
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    await typeInvalidAndWait(inputArea);
+
+    // Move off "tree" first so the assertion below proves the auto-fix
+    // itself switched the tab, rather than it never having left "tree".
+    fireEvent.click(screen.getByText("Code"));
+    expect(screen.getByTestId("active-tab").textContent).toBe("code");
+
+    await act(async () => {
+      fireEvent.keyDown(window, { ctrlKey: true, key: "r" });
+    });
+
+    expect(screen.getByTestId("active-tab").textContent).toBe("tree");
+  });
+
+  it("also works with Meta+R (Cmd on Mac)", async () => {
+    render(<App />, { wrapper });
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    await typeInvalidAndWait(inputArea);
+
+    await act(async () => {
+      fireEvent.keyDown(window, { metaKey: true, key: "r" });
+    });
+
+    expect(inputArea.value).not.toContain(",}");
+    const statusBar = document.querySelector(".status-bar");
+    expect(statusBar?.textContent).toMatch(/Valid JSON/);
+  });
+
+  it("does NOT trigger when 'r' is pressed without Ctrl/Meta", async () => {
+    render(<App />, { wrapper });
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    await typeInvalidAndWait(inputArea);
+
+    await act(async () => {
+      fireEvent.keyDown(window, { key: "r" });
+    });
+
+    expect(inputArea.value).toBe('{"a":1,}');
+  });
+
+  it("is distinct from Ctrl+Shift+R, which still opens the Repair preview tab instead of auto-fixing in place", async () => {
+    render(<App />, { wrapper });
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    await typeInvalidAndWait(inputArea);
+
+    await act(async () => {
+      fireEvent.keyDown(window, { ctrlKey: true, shiftKey: true, key: "R" });
+    });
+
+    // Ctrl+Shift+R opens the repair-preview tab and leaves the input unchanged
+    expect(screen.getByTestId("active-tab").textContent).toBe("repair");
+    expect(inputArea.value).toBe('{"a":1,}');
+  });
+
+  it("does NOT flip valid JSON to an error state (guards against auto-fixing already-valid input)", async () => {
+    render(<App />, { wrapper });
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    vi.useFakeTimers();
+    fireEvent.change(inputArea, { target: { value: '{"a":1}' } });
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+
+    const statusBar = document.querySelector(".status-bar");
+    expect(statusBar?.textContent).toMatch(/Valid JSON/);
+
+    await act(async () => {
+      fireEvent.keyDown(window, { ctrlKey: true, key: "r" });
+    });
+
+    expect(inputArea.value).toBe('{"a":1}');
+    expect(statusBar?.textContent).toMatch(/Valid JSON/);
+    expect(statusBar?.textContent).not.toMatch(/Invalid JSON/);
+  });
+
+  it("does not fire while the command palette is open (avoids silently mutating input behind a modal)", async () => {
+    render(<App />, { wrapper });
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    await typeInvalidAndWait(inputArea);
+
+    // Open the command palette (Ctrl+K)
+    fireEvent.keyDown(window, { ctrlKey: true, key: "k" });
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.keyDown(window, { ctrlKey: true, key: "r" });
+    });
+
+    // Input must be untouched — the shortcut should not have reached handleAutoFix
+    expect(inputArea.value).toBe('{"a":1,}');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // JSO-14: Table View tab (via RightPane mock — tests activeTab switch)
 // ---------------------------------------------------------------------------
 

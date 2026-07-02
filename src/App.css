@@ -497,6 +497,12 @@ button.toolbar-btn--clear-armed:hover:not(:disabled) {
   border-bottom-color: var(--accent);
 }
 
+.tab-btn--error {
+  color: var(--error);
+  background: var(--error-bg);
+  border-bottom-color: var(--error);
+}
+
 .tab-btn__badge {
   margin-left: 4px;
   font-size: 10px;
@@ -559,21 +565,72 @@ button.toolbar-btn--clear-armed:hover:not(:disabled) {
   font-size: 13px;
 }
 
-.error-panel__heading {
-  font-weight: 600;
-  color: var(--error);
-  margin-bottom: 8px;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+/* ── ErrorBanner (JSO-39) ── */
+.error-summary {
+  display: flex;
+  gap: 10px;
+  padding: 14px;
+  margin-bottom: 16px;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border-subtle);
+  border-radius: var(--radius-lg);
   font-family: var(--sans);
 }
 
-.error-panel__message {
+.error-summary__icon {
+  flex-shrink: 0;
+  color: var(--error);
+  margin-top: 1px;
+}
+
+.error-summary__body {
+  min-width: 0;
+}
+
+.error-summary__title {
+  font-weight: 600;
+  color: var(--error);
+  margin: 0 0 4px;
+  font-size: 13px;
+}
+
+.error-summary__message {
   color: var(--text-primary);
-  margin-bottom: 16px;
-  line-height: 1.6;
+  margin: 0 0 6px;
+  font-size: 13px;
+  line-height: 1.5;
   overflow-wrap: break-word;
+}
+
+.error-summary__location {
+  color: var(--text-secondary);
+  margin: 0 0 10px;
+  font-size: 12px;
+}
+
+.error-summary__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.error-summary__fix-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.error-summary__kbd {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid
+    color-mix(in srgb, var(--text-on-accent, #fff) 35%, transparent);
+  font-size: 10px;
+  font-family: var(--mono);
+  letter-spacing: 0;
+  opacity: 0.85;
 }
 
 .error-panel__snippet {

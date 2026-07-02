@@ -158,3 +158,87 @@ describe("CodeEditor — onCursorChange", () => {
     expect(onCursorChange).not.toHaveBeenCalled();
   });
 });
+
+describe("CodeEditor — jumpTarget", () => {
+  function getView(container: HTMLElement): EditorView {
+    const dom = container.querySelector(".code-editor") as HTMLElement;
+    const view = EditorView.findFromDOM(dom);
+    if (!view) throw new Error("Could not find CodeMirror view in DOM");
+    return view;
+  }
+
+  const multilineValue = '{\n  "a": 1,\n  "b": 2,\n  "c": 3\n}';
+
+  it("scrolls to and selects the target position, and focuses the editor, when jumpTarget is set", () => {
+    const { container, rerender } = render(
+      <CodeEditor value={multilineValue} jumpTarget={null} />,
+    );
+    const view = getView(container);
+
+    rerender(
+      <CodeEditor
+        value={multilineValue}
+        jumpTarget={{ line: 3, column: 3, nonce: 1 }}
+      />,
+    );
+
+    // Expected offset: start of line 3 + (column - 1)
+    const lineObj = view.state.doc.line(3);
+    const expectedPos = lineObj.from + 2;
+    expect(view.state.selection.main.head).toBe(expectedPos);
+    expect(view.state.selection.main.anchor).toBe(expectedPos);
+
+    // The editor's content element should now be focused.
+    expect(view.contentDOM.contains(document.activeElement)).toBe(true);
+  });
+
+  it("re-triggers the jump when the same line/column is requested again with an incremented nonce", () => {
+    const { container, rerender } = render(
+      <CodeEditor value={multilineValue} jumpTarget={null} />,
+    );
+    const view = getView(container);
+
+    rerender(
+      <CodeEditor
+        value={multilineValue}
+        jumpTarget={{ line: 2, column: 1, nonce: 1 }}
+      />,
+    );
+    expect(() =>
+      rerender(
+        <CodeEditor
+          value={multilineValue}
+          jumpTarget={{ line: 2, column: 1, nonce: 2 }}
+        />,
+      ),
+    ).not.toThrow();
+
+    const lineObj = view.state.doc.line(2);
+    expect(view.state.selection.main.head).toBe(lineObj.from);
+    expect(view.contentDOM.contains(document.activeElement)).toBe(true);
+  });
+
+  it("does not throw and does not move the cursor when jumpTarget is omitted", () => {
+    const { container } = render(<CodeEditor value={multilineValue} />);
+    const view = getView(container);
+    expect(view.state.selection.main.head).toBe(0);
+  });
+
+  it("does not throw when jumpTarget is null", () => {
+    expect(() =>
+      render(<CodeEditor value={multilineValue} jumpTarget={null} />),
+    ).not.toThrow();
+  });
+
+  it("does not throw when jumpTarget transitions from a value back to null", () => {
+    const { rerender } = render(
+      <CodeEditor
+        value={multilineValue}
+        jumpTarget={{ line: 2, column: 1, nonce: 1 }}
+      />,
+    );
+    expect(() =>
+      rerender(<CodeEditor value={multilineValue} jumpTarget={null} />),
+    ).not.toThrow();
+  });
+});

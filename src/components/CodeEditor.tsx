@@ -56,6 +56,13 @@ export interface CodeEditorCursor {
   column: number;
 }
 
+export interface CodeEditorJumpTarget {
+  line: number;
+  column?: number;
+  /** Bump this on every "jump" request so repeated clicks on the same location retrigger the effect. */
+  nonce: number;
+}
+
 interface CodeEditorProps {
   value: string;
   onChange?: (value: string) => void;
@@ -64,6 +71,7 @@ interface CodeEditorProps {
   error?: CodeEditorError | null;
   readOnly?: boolean;
   placeholder?: string;
+  jumpTarget?: CodeEditorJumpTarget | null;
 }
 
 export function CodeEditor({
@@ -74,6 +82,7 @@ export function CodeEditor({
   error,
   readOnly = false,
   placeholder,
+  jumpTarget,
 }: CodeEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -226,6 +235,26 @@ export function CodeEditor({
       effects: setErrorLine.of(error.line ?? null),
     });
   }, [error]);
+
+  // Scroll to and focus a requested line/column (e.g. "Jump to error")
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view || !jumpTarget) return;
+    const doc = view.state.doc;
+    const lineNum = Math.max(1, Math.min(jumpTarget.line, doc.lines));
+    const lineObj = doc.line(lineNum);
+    const col = Math.max(0, (jumpTarget.column ?? 1) - 1);
+    const pos = Math.max(
+      lineObj.from,
+      Math.min(lineObj.from + col, lineObj.to),
+    );
+    view.dispatch({
+      selection: { anchor: pos },
+      scrollIntoView: true,
+    });
+    view.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jumpTarget?.nonce]);
 
   return <div ref={containerRef} className="code-editor" />;
 }
