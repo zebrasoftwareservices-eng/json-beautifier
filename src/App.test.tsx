@@ -8,6 +8,7 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, afterEach } from "vitest";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
 import App from "./App";
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { processJson } from "./worker/jsonLogic";
@@ -138,7 +139,9 @@ vi.mock("./components/RightPane", () => ({
 }));
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
-  <ThemeProvider>{children}</ThemeProvider>
+  <MemoryRouter>
+    <ThemeProvider>{children}</ThemeProvider>
+  </MemoryRouter>
 );
 
 // Helper: render App and return commonly used handles.
@@ -837,6 +840,59 @@ describe("Keyboard shortcut Cmd/Ctrl+L → Load from URL", () => {
   });
 });
 
+describe("Keyboard shortcut Cmd/Ctrl+Y → Convert JSON (navigate to /json-to-yaml)", () => {
+  // App calls useNavigate() internally, so these tests render App inside its
+  // own Routes (rather than the shared `wrapper`) with a marker route on
+  // "/json-to-yaml" to prove navigation actually happened.
+  function renderAtEditor() {
+    return render(
+      <MemoryRouter initialEntries={["/editor"]}>
+        <ThemeProvider>
+          <Routes>
+            <Route path="/editor" element={<App />} />
+            <Route
+              path="/json-to-yaml"
+              element={<div data-testid="yaml-page">YAML page</div>}
+            />
+          </Routes>
+        </ThemeProvider>
+      </MemoryRouter>,
+    );
+  }
+
+  it("navigates to /json-to-yaml when Ctrl+Y is pressed", async () => {
+    renderAtEditor();
+    expect(screen.queryByTestId("yaml-page")).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.keyDown(window, { ctrlKey: true, key: "y" });
+    });
+
+    expect(screen.getByTestId("yaml-page")).toBeInTheDocument();
+  });
+
+  it("navigates to /json-to-yaml when Cmd+Y (metaKey) is pressed", async () => {
+    renderAtEditor();
+    expect(screen.queryByTestId("yaml-page")).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.keyDown(window, { metaKey: true, key: "y" });
+    });
+
+    expect(screen.getByTestId("yaml-page")).toBeInTheDocument();
+  });
+
+  it("does NOT navigate when 'y' is pressed without Ctrl/Meta", async () => {
+    renderAtEditor();
+
+    await act(async () => {
+      fireEvent.keyDown(window, { key: "y" });
+    });
+
+    expect(screen.queryByTestId("yaml-page")).not.toBeInTheDocument();
+  });
+});
+
 describe("Load URL feature", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -1088,6 +1144,50 @@ describe("Load URL feature", () => {
 // JSO-14: Download button
 // ---------------------------------------------------------------------------
 
+describe("Copy button — toast notification", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("shows a 'Copied to clipboard' toast after a successful copy with valid output present", async () => {
+    // fireEvent (not userEvent) is used for the clicks here: userEvent.setup()
+    // replaces navigator.clipboard internally with its own stub, which would
+    // clobber our writeTextMock (see TreeView.test.tsx for the same note).
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: writeTextMock },
+      writable: true,
+      configurable: true,
+    });
+
+    render(<App />, { wrapper });
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    const outputArea = screen.getByTestId(
+      "output-editor",
+    ) as HTMLTextAreaElement;
+    const formatBtn = screen.getByRole("button", { name: "Format" });
+
+    setInput(inputArea, validJson);
+    await act(async () => {
+      fireEvent.click(formatBtn);
+    });
+    await waitFor(() => expect(outputArea.value).not.toBe(""));
+
+    const copyBtn = screen.getByRole("button", { name: "Copy" });
+    await act(async () => {
+      fireEvent.click(copyBtn);
+    });
+
+    await waitFor(() =>
+      expect(document.querySelector(".toast")).toHaveTextContent(
+        "Copied to clipboard",
+      ),
+    );
+    expect(writeTextMock).toHaveBeenCalledWith(outputArea.value);
+  });
+});
+
 describe("Download button", () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -1135,11 +1235,12 @@ describe("Download button", () => {
       click: clickSpy,
     } as unknown as HTMLAnchorElement;
 
+    const realCreateElement = document.createElement.bind(document);
     const createElementSpy = vi
       .spyOn(document, "createElement")
       .mockImplementation((tag: string) => {
         if (tag === "a") return mockAnchor;
-        return document.createElement(tag);
+        return realCreateElement(tag);
       });
 
     const downloadBtn = screen.getByRole("button", { name: /download/i });
@@ -1148,6 +1249,52 @@ describe("Download button", () => {
     expect(createElementSpy).toHaveBeenCalledWith("a");
     expect(mockAnchor.download).toBe("output.json");
     expect(clickSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows a toast starting with 'Downloaded' after triggering a download", async () => {
+    const user = userEvent.setup();
+    render(<App />, { wrapper });
+
+    const inputArea = screen.getByTestId("input-editor") as HTMLTextAreaElement;
+    const outputArea = screen.getByTestId(
+      "output-editor",
+    ) as HTMLTextAreaElement;
+    const formatBtn = screen.getByRole("button", { name: "Format" });
+
+    setInput(inputArea, validJson);
+    await user.click(formatBtn);
+    await waitFor(() => expect(outputArea.value).not.toBe(""));
+
+    const mockUrl = "blob:http://localhost/mock-uuid";
+    vi.stubGlobal(
+      "URL",
+      Object.assign(URL, {
+        createObjectURL: vi.fn(() => mockUrl),
+        revokeObjectURL: vi.fn(),
+      }),
+    );
+
+    const clickSpy = vi.fn();
+    const mockAnchor = {
+      href: "",
+      download: "",
+      click: clickSpy,
+    } as unknown as HTMLAnchorElement;
+
+    const realCreateElement = document.createElement.bind(document);
+    vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
+      if (tag === "a") return mockAnchor;
+      return realCreateElement(tag);
+    });
+
+    const downloadBtn = screen.getByRole("button", { name: /download/i });
+    await user.click(downloadBtn);
+
+    await waitFor(() =>
+      expect(document.querySelector(".toast")?.textContent).toMatch(
+        /^Downloaded/,
+      ),
+    );
   });
 
   it("Download button does nothing (no anchor created) when output is empty", async () => {

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { Kbd } from "./Kbd";
 import "./CommandPalette.css";
 
 export interface PaletteCommand {
@@ -167,7 +168,7 @@ export function CommandPalette({
               onClick={() => execute(cmd)}
             >
               <span className="palette-item__label">{cmd.label}</span>
-              <kbd className="palette-item__kbd">{cmd.shortcut}</kbd>
+              {cmd.shortcut && <Kbd>{cmd.shortcut}</Kbd>}
             </li>
           ))}
         </ul>

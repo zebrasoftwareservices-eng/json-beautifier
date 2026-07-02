@@ -85,6 +85,29 @@ describe("CommandPalette — command list", () => {
   });
 });
 
+// ── 3b. Commands with an empty shortcut render no kbd chip ────────────────────
+
+describe("CommandPalette — commands without a shortcut", () => {
+  it("renders the label but no <kbd> element for a command with shortcut: ''", () => {
+    const commands: PaletteCommand[] = [
+      {
+        id: "toggle-theme",
+        label: "Toggle Theme",
+        shortcut: "",
+        action: noop,
+      },
+      { id: "beautify", label: "Beautify JSON", shortcut: "⌘⇧B", action: noop },
+    ];
+    renderPalette(true, vi.fn(), commands);
+
+    const themeItem = screen.getByText("Toggle Theme").closest("li")!;
+    expect(themeItem.querySelector("kbd")).toBeNull();
+
+    const beautifyItem = screen.getByText("Beautify JSON").closest("li")!;
+    expect(beautifyItem.querySelector("kbd")).toHaveTextContent("⌘⇧B");
+  });
+});
+
 // ── 4. Disabled commands are not shown ───────────────────────────────────────
 
 describe("CommandPalette — disabled commands", () => {

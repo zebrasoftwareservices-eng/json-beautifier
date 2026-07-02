@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { IconSearch } from "@tabler/icons-react";
 import { ThemeToggle } from "./ThemeToggle";
+import { Kbd } from "./Kbd";
 import "./IdentityBar.css";
 
 const isMac =
@@ -46,7 +47,7 @@ export function IdentityBar({ fileName, onOpenPalette }: IdentityBarProps) {
         <span className="identity-bar__search-label">
           Search or run a command
         </span>
-        <kbd className="identity-bar__kbd">{isMac ? "⌘K" : "Ctrl+K"}</kbd>
+        <Kbd>{isMac ? "⌘K" : "Ctrl+K"}</Kbd>
       </button>
 
       {/* Theme toggle */}

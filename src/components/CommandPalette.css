@@ -1,7 +1,7 @@
 .palette-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--scrim);
   z-index: 200;
   display: flex;
   align-items: flex-start;
@@ -12,13 +12,40 @@
 .palette-dialog {
   background: var(--surface-elevated);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-xl);
   width: 100%;
   max-width: 520px;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-xl);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  animation: palette-scale-in var(--duration-slow) var(--ease-out);
+}
+
+@keyframes palette-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .palette-dialog {
+    animation: palette-fade-in 150ms ease-out;
+  }
+}
+
+@keyframes palette-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .palette-input {
@@ -72,18 +99,6 @@
 
 .palette-item__label {
   flex: 1;
-}
-
-.palette-item__kbd {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0;
-  background: var(--surface-panel);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  padding: 0 4px;
-  color: var(--text-muted);
-  white-space: nowrap;
 }
 
 .palette-empty {
